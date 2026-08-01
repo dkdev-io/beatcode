@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
 export type SoundCategory = 'drums' | 'bass' | 'lead' | 'pad' | 'fx';
+export type ArrangementMode = 'stack' | 'cat';
 
 export interface StemEffect {
   id: string;
@@ -16,6 +17,7 @@ export interface StemChannel {
   muted: boolean;
   solo: boolean;
   volume: number; // 0.0 to 1.0
+  pan?: number; // 0.0 (left) to 1.0 (right), default 0.5
   bank?: string;
   pattern: string; // Strudel mini-notation
   effects: StemEffect[];
@@ -32,12 +34,14 @@ export interface StudioState {
   quantum: number;
   isPlaying: boolean;
   masterVolume: number;
+  arrangementMode: ArrangementMode;
   stems: StemChannel[];
   savedPalette: StemChannel[];
 
   setBpm: (bpm: number) => void;
   setQuantum: (quantum: number) => void;
   setMasterVolume: (vol: number) => void;
+  setArrangementMode: (mode: ArrangementMode) => void;
   setPlaying: (isPlaying: boolean) => void;
   togglePlay: () => void;
   addStem: (stem: Omit<StemChannel, 'id'>) => void;
@@ -63,6 +67,7 @@ const DEFAULT_STEMS: StemChannel[] = [
     muted: false,
     solo: false,
     volume: 0.85,
+    pan: 0.5,
     bank: 'RolandTR909',
     pattern: 'bd*4, [~ sd]*2, [hh*8]',
     effects: [
@@ -77,6 +82,7 @@ const DEFAULT_STEMS: StemChannel[] = [
     muted: false,
     solo: false,
     volume: 0.75,
+    pan: 0.4,
     bank: 'sawtooth',
     pattern: 'c1 [~ c1] eb1 f1',
     effects: [
@@ -91,6 +97,7 @@ const DEFAULT_STEMS: StemChannel[] = [
     muted: false,
     solo: false,
     volume: 0.6,
+    pan: 0.6,
     bank: 'square',
     pattern: '~ [g4 c5] ~ e5',
     effects: [
@@ -106,12 +113,14 @@ export const useStudioStore = create<StudioState>()(
     quantum: 4,
     isPlaying: false,
     masterVolume: 0.8,
+    arrangementMode: 'stack',
     stems: DEFAULT_STEMS,
     savedPalette: [],
 
     setBpm: (bpm) => set({ bpm: Math.max(40, Math.min(240, bpm)) }),
     setQuantum: (quantum) => set({ quantum }),
     setMasterVolume: (masterVolume) => set({ masterVolume }),
+    setArrangementMode: (arrangementMode) => set({ arrangementMode }),
     setPlaying: (isPlaying) => set({ isPlaying }),
     togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
 

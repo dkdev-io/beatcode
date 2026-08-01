@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Square, Activity, Radio, Volume2 } from 'lucide-react';
+import { Play, Square, Activity, Radio, Volume2, Layers, Repeat } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
 import { engine } from '../../lib/engine';
 
@@ -13,13 +13,15 @@ export const GlobalControls: React.FC = () => {
     togglePlay,
     masterVolume,
     setMasterVolume,
+    arrangementMode,
+    setArrangementMode,
     stems
   } = useStudioStore();
 
   const handlePlayToggle = async () => {
     if (!isPlaying) {
       await engine.init();
-      engine.syncState(stems, bpm, masterVolume, quantum);
+      engine.syncState(stems, bpm, masterVolume, arrangementMode);
     } else {
       engine.stop();
     }
@@ -46,8 +48,8 @@ export const GlobalControls: React.FC = () => {
         </div>
       </div>
 
-      {/* Center Controls: Play/Stop & BPM */}
-      <div className="flex items-center gap-6">
+      {/* Center Controls: Play/Stop, BPM, Mode */}
+      <div className="flex items-center gap-4 flex-wrap justify-center">
         {/* Play/Stop Toggle */}
         <button
           onClick={handlePlayToggle}
@@ -92,6 +94,32 @@ export const GlobalControls: React.FC = () => {
             onChange={(e) => setBpm(Number(e.target.value))}
             className="w-20 accent-cyan-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg hidden sm:block"
           />
+        </div>
+
+        {/* Mode Selector: Parallel (Stack) vs Sequential (Cat) */}
+        <div className="flex items-center bg-zinc-950/80 p-1 rounded-xl border border-zinc-800">
+          <button
+            onClick={() => setArrangementMode('stack')}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
+              arrangementMode === 'stack'
+                ? 'bg-cyan-500 text-zinc-950 shadow-md'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+            title="Parallel Layering Mode (All cards play simultaneously)"
+          >
+            <Layers size={13} /> Layer
+          </button>
+          <button
+            onClick={() => setArrangementMode('cat')}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all ${
+              arrangementMode === 'cat'
+                ? 'bg-purple-500 text-white shadow-md'
+                : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+            title="Sequential Timeline Mode (Cards play sequentially in order)"
+          >
+            <Repeat size={13} /> Sequence
+          </button>
         </div>
 
         {/* Quantum Boundary */}

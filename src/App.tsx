@@ -13,7 +13,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const unsub = useStudioStore.subscribe((state) => {
       if (state.isPlaying) {
-        engine.syncState(state.stems, state.bpm, state.masterVolume, state.quantum);
+        engine.syncState(state.stems, state.bpm, state.masterVolume, state.arrangementMode);
       }
     });
 

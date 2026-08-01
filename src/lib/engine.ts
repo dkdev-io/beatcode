@@ -1,5 +1,5 @@
 import { evaluate, initStrudel, initAudioOnFirstClick, getAudioContext } from '@strudel/web';
-import type { StemChannel } from '../store/useStudioStore';
+import type { StemChannel, ArrangementMode } from '../store/useStudioStore';
 
 class StrudelEngine {
   private isInitialized = false;
@@ -49,11 +49,16 @@ class StrudelEngine {
     return dataArray;
   }
 
-  public compileASTToCode(stems: StemChannel[], bpm: number, masterVolume: number = 0.8): string {
+  public compileASTToCode(
+    stems: StemChannel[],
+    bpm: number,
+    masterVolume: number = 0.8,
+    arrangementMode: ArrangementMode = 'stack'
+  ): string {
     // Solo logic: If any stem has solo: true, only active solo stems play
     const hasSolo = stems.some((s) => s.solo);
     const activeStems = stems.filter((s) => {
-      if (s.volume <= 0.001) return false; // Exclude muted / 0% volume channels
+      if (s.volume <= 0.001) return false;
       if (hasSolo) return s.solo && !s.muted;
       return !s.muted;
     });
@@ -84,20 +89,25 @@ class StrudelEngine {
         if (fx.type === 'gain') code += `.gain(${Math.max(0.0001, fx.value).toFixed(4)})`;
       });
 
+      if (typeof stem.pan === 'number') {
+        code += `.pan(${stem.pan.toFixed(2)})`;
+      }
+
       const safeGain = Math.max(0.0001, stem.volume).toFixed(4);
       code += `.gain(${safeGain})`;
       return `  // ${stem.name}\n  ${code}`;
     });
 
+    const combiner = arrangementMode === 'cat' ? 'cat' : 'stack';
     const safeMaster = Math.max(0.0001, masterVolume).toFixed(4);
-    return `stack(\n${stemCodes.join(',\n')}\n).cpm(${bpm}).gain(${safeMaster})`;
+    return `${combiner}(\n${stemCodes.join(',\n')}\n).cpm(${bpm}).gain(${safeMaster})`;
   }
 
   public async syncState(
     stems: StemChannel[],
     bpm: number,
     masterVolume: number = 0.8,
-    _quantum: number = 4
+    arrangementMode: ArrangementMode = 'stack'
   ) {
     if (!this.isInitialized) {
       await this.init();
@@ -110,7 +120,7 @@ class StrudelEngine {
       }
     } catch (_) {}
 
-    const code = this.compileASTToCode(stems, bpm, masterVolume);
+    const code = this.compileASTToCode(stems, bpm, masterVolume, arrangementMode);
 
     try {
       evaluate(code);
