@@ -12,13 +12,6 @@ class StrudelEngine {
       await initAudioOnFirstClick();
       await initStrudel();
 
-      // Preload standard dirt sample soundbank (bd, sd, hh, cp, rim, cb, 808, 707, linn, casio, perc, etc.)
-      try {
-        await evaluate('samples("github:tidalcycles/dirt-samples")');
-      } catch (e) {
-        console.warn('Dirt-samples preload notification:', e);
-      }
-
       const ctx = getAudioContext();
       if (ctx && ctx.state === 'suspended') {
         await ctx.resume();
@@ -79,32 +72,55 @@ class StrudelEngine {
       let code = '';
       if (stem.category === 'drums') {
         const bank = (stem.bank || 'RolandTR909').toLowerCase();
-        let patternStr = stem.pattern;
+        const patternStr = stem.pattern;
 
-        if (['sine', 'triangle', 'sawtooth', 'square'].includes(bank)) {
-          // Pure WebAudio Synth Drum Mode (100% offline with decay envelope percussion)
-          const synthWave = bank;
-          const k = `note("c1*4").s("${synthWave}").lpf(300).decay(0.12).gain(1.2)`;
-          const s = `note("~ e2 ~ e2").s("${synthWave}").crush(3).decay(0.15).gain(0.9)`;
-          const h = `note("c6*8").s("${synthWave}").hpf(4500).decay(0.06).gain(0.4)`;
+        // Parse user mini-notation pattern (e.g. bd*4, [~ sd]*2, [hh*8]) into drum tracks
+        const kickPat = patternStr.replace(/\[.*?\]/g, '').replace(/sd|hh|cp|rim|cb/g, '~');
+        const snarePat = patternStr.replace(/bd|hh|cp|rim|cb/g, '~');
+        const hatPat = patternStr.replace(/bd|sd|cp|rim|cb/g, '~');
+
+        if (bank.includes('808')) {
+          // 808 Trap: Deep Sub Sine Boom Kick + Sawtooth Trap Snare + Hi-Hat Sizzle
+          const k = `note("${kickPat.replace(/bd/g, 'c0')}").s("sine").decay(0.25).gain(1.4)`;
+          const s = `note("${snarePat.replace(/sd/g, 'd2')}").s("sawtooth").crush(2).decay(0.10).gain(0.9)`;
+          const h = `note("${hatPat.replace(/hh/g, 'c7')}").s("square").hpf(7000).decay(0.04).gain(0.35)`;
+          code = `stack(${k}, ${s}, ${h})`;
+        } else if (bank.includes('707')) {
+          // 707 Synthwave: Gated Square Kick + Snare
+          const k = `note("${kickPat.replace(/bd/g, 'g1')}").s("square").lpf(350).decay(0.14).gain(1.0)`;
+          const s = `note("${snarePat.replace(/sd/g, 'a2')}").s("sawtooth").hpf(1200).crush(3).decay(0.16).gain(0.9)`;
+          const h = `note("${hatPat.replace(/hh/g, 'c6')}").s("sawtooth").hpf(4000).decay(0.05).gain(0.4)`;
+          code = `stack(${k}, ${s}, ${h})`;
+        } else if (bank.includes('linn')) {
+          // 80s Linn: Tight Linn Percussion
+          const k = `note("${kickPat.replace(/bd/g, 'd1')}").s("triangle").lpf(280).decay(0.13).gain(1.1)`;
+          const s = `note("${snarePat.replace(/sd/g, 'e2')}").s("sawtooth").crush(4).decay(0.15).gain(0.8)`;
+          const h = `note("${hatPat.replace(/hh/g, 'c6')}").s("square").hpf(5200).decay(0.05).gain(0.35)`;
+          code = `stack(${k}, ${s}, ${h})`;
+        } else if (bank.includes('casio')) {
+          // Lo-Fi Casio Mini Toy Drum Machine
+          const k = `note("${kickPat.replace(/bd/g, 'e2')}").s("square").crush(5).decay(0.10).gain(0.95)`;
+          const s = `note("${snarePat.replace(/sd/g, 'e3')}").s("square").crush(6).decay(0.12).gain(0.85)`;
+          const h = `note("${hatPat.replace(/hh/g, 'c7')}").s("triangle").crush(7).decay(0.04).gain(0.4)`;
+          code = `stack(${k}, ${s}, ${h})`;
+        } else if (bank.includes('acoustic')) {
+          // Live Acoustic Drum Kit
+          const k = `note("${kickPat.replace(/bd/g, 'c1')}").s("sine").lpf(280).decay(0.18).gain(1.1)`;
+          const s = `note("${snarePat.replace(/sd/g, 'g2')}").s("sawtooth").hpf(800).decay(0.14).gain(0.85)`;
+          const h = `note("${hatPat.replace(/hh/g, 'c6')}").s("triangle").hpf(5000).decay(0.07).gain(0.4)`;
+          code = `stack(${k}, ${s}, ${h})`;
+        } else if (bank.includes('perc')) {
+          // Afro Tribal Percussion
+          const k = `note("${kickPat.replace(/bd/g, 'g1')}").s("sine").lpf(320).decay(0.15).gain(1.0)`;
+          const s = `note("${snarePat.replace(/sd/g, 'c3')}").s("triangle").decay(0.12).gain(0.9)`;
+          const h = `note("${hatPat.replace(/hh/g, 'c6')}").s("sawtooth").hpf(6000).decay(0.04).gain(0.35)`;
           code = `stack(${k}, ${s}, ${h})`;
         } else {
-          // Sample-based Drum Kit Mode (dirt-samples: 909, 808, 707, linn, casio, acoustic, perc)
-          if (bank.includes('808')) {
-            patternStr = patternStr.replace(/\bbd\b/g, '808bd').replace(/\bsd\b/g, '808sd').replace(/\bhh\b/g, '808oh');
-          } else if (bank.includes('707')) {
-            patternStr = patternStr.replace(/\bbd\b/g, '707bd').replace(/\bsd\b/g, '707sd').replace(/\bhh\b/g, '707');
-          } else if (bank.includes('linn')) {
-            patternStr = patternStr.replace(/\bbd\b/g, 'linn').replace(/\bsd\b/g, 'linn').replace(/\bhh\b/g, 'linn');
-          } else if (bank.includes('acoustic') || bank.includes('rock')) {
-            patternStr = patternStr.replace(/\bbd\b/g, 'drum:0').replace(/\bsd\b/g, 'drum:1').replace(/\bhh\b/g, 'drum:2');
-          } else if (bank.includes('casio')) {
-            patternStr = patternStr.replace(/\bbd\b/g, 'casiobd').replace(/\bsd\b/g, 'casiosd').replace(/\bhh\b/g, 'casiohh');
-          } else if (bank.includes('perc')) {
-            patternStr = patternStr.replace(/\bbd\b/g, 'perc:0').replace(/\bsd\b/g, 'perc:1').replace(/\bhh\b/g, 'perc:2');
-          }
-
-          code = `s("${patternStr}")`;
+          // Default 909 Techno Punch
+          const k = `note("${kickPat.replace(/bd/g, 'c1')}").s("sine").lpf(250).decay(0.12).gain(1.1)`;
+          const s = `note("${snarePat.replace(/sd/g, 'g2')}").s("triangle").crush(4).decay(0.15).gain(0.8)`;
+          const h = `note("${hatPat.replace(/hh/g, 'c6')}").s("square").hpf(5000).decay(0.05).gain(0.4)`;
+          code = `stack(${k}, ${s}, ${h})`;
         }
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
