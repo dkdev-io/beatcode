@@ -99,7 +99,7 @@ const DEFAULT_STEMS: StemChannel[] = [
     volume: 0.6,
     pan: 0.6,
     bank: 'square',
-    pattern: '~ [g4 c5] ~ e5',
+    pattern: 'g4 c5 e5 g5',
     effects: [
       { id: 'fx-5', type: 'delay', value: 0.3 },
       { id: 'fx-6', type: 'room', value: 0.5 }

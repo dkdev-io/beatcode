@@ -72,17 +72,16 @@ class StrudelEngine {
       if (stem.category === 'drums') {
         code = `s("${stem.pattern}")`;
       } else {
-        code = `note("${stem.pattern}")`;
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
         if (!validSynths.includes(soundName)) {
           soundName = stem.category === 'bass' ? 'sawtooth' : 'square';
         }
-        code += `.s("${soundName}")`;
+        code = `s("${soundName}").note("${stem.pattern}")`;
       }
 
       stem.effects.forEach((fx) => {
-        if (fx.type === 'lpf') code += `.lpf(${Math.round(fx.value * 8000 + 100)})`;
-        if (fx.type === 'hpf') code += `.hpf(${Math.round(fx.value * 4000)})`;
+        if (fx.type === 'lpf') code += `.lpf(${Math.round(fx.value * 18000 + 500)})`;
+        if (fx.type === 'hpf') code += `.hpf(${Math.round(fx.value * 2000)})`;
         if (fx.type === 'delay') code += `.delay(${fx.value.toFixed(2)})`;
         if (fx.type === 'room') code += `.room(${fx.value.toFixed(2)})`;
         if (fx.type === 'crush') code += `.crush(${Math.floor(fx.value * 12 + 1)})`;
