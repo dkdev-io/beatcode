@@ -91,7 +91,7 @@ const DEFAULT_STEMS: StemChannel[] = [
     muted: false,
     solo: false,
     volume: 0.6,
-    bank: 'gm_lead',
+    bank: 'square',
     pattern: '~ [g4 c5] ~ e5',
     effects: [
       { id: 'fx-5', type: 'delay', value: 0.3 },

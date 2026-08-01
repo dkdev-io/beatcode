@@ -60,13 +60,18 @@ class StrudelEngine {
 
     if (activeStems.length === 0) return 'silence';
 
+    const validSynths = ['sawtooth', 'square', 'sine', 'triangle', 'piano', 'organ'];
+
     const stemCodes = activeStems.map((stem) => {
       let code = '';
       if (stem.category === 'drums') {
         code = `s("${stem.pattern}")`;
       } else {
         code = `note("${stem.pattern}")`;
-        const soundName = stem.bank || 'sawtooth';
+        let soundName = (stem.bank || 'sawtooth').toLowerCase();
+        if (!validSynths.includes(soundName)) {
+          soundName = stem.category === 'bass' ? 'sawtooth' : 'square';
+        }
         code += `.s("${soundName}")`;
       }
 

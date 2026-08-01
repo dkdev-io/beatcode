@@ -44,11 +44,11 @@ export const StemRack: React.FC = () => {
 
   const handleAddNewStem = (category: SoundCategory = 'lead') => {
     const defaultPatterns: Record<SoundCategory, { name: string; pattern: string; bank: string }> = {
-      drums: { name: 'Drums', pattern: 'bd sd [hh*4] sd', bank: 'RolandTR909' },
+      drums: { name: 'Drums', pattern: 'bd*4, [~ sd]*2, [hh*8]', bank: '' },
       bass: { name: 'Sub Bass', pattern: 'c1 [~ c1] g1 f1', bank: 'sawtooth' },
-      lead: { name: 'Synth Lead', pattern: 'c4 e4 g4 b4', bank: 'gm_lead' },
+      lead: { name: 'Synth Lead', pattern: 'c4 e4 g4 b4', bank: 'square' },
       pad: { name: 'Atmosphere Pad', pattern: '[c3,e3,g3] ~ [f3,a3,c4] ~', bank: 'sawtooth' },
-      fx: { name: 'Glitch FX', pattern: '~ ~ ~ noise', bank: 'sawtooth' },
+      fx: { name: 'Glitch FX', pattern: 'c5 e5 g5', bank: 'sine' },
     };
 
     const config = defaultPatterns[category];
