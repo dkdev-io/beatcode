@@ -9,23 +9,13 @@ import { useStudioStore } from './store/useStudioStore';
 import { engine } from './lib/engine';
 
 export const App: React.FC = () => {
-  // Subscribe to Zustand state changes to automatically invoke engine.syncState when playing
+  // Subscribe to all store updates and sync immediately to Strudel audio engine when playing
   useEffect(() => {
-    const unsub = useStudioStore.subscribe(
-      (state) => ({
-        stems: state.stems,
-        bpm: state.bpm,
-        masterVolume: state.masterVolume,
-        quantum: state.quantum,
-        isPlaying: state.isPlaying
-      }),
-      ({ stems, bpm, masterVolume, quantum, isPlaying }) => {
-        if (isPlaying) {
-          engine.syncState(stems, bpm, masterVolume, quantum);
-        }
-      },
-      { fireImmediately: false }
-    );
+    const unsub = useStudioStore.subscribe((state) => {
+      if (state.isPlaying) {
+        engine.syncState(state.stems, state.bpm, state.masterVolume, state.quantum);
+      }
+    });
 
     return () => unsub();
   }, []);

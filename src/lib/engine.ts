@@ -4,7 +4,6 @@ import type { StemChannel } from '../store/useStudioStore';
 class StrudelEngine {
   private isInitialized = false;
   private analyserNode: AnalyserNode | null = null;
-  private pendingSyncTimeout: ReturnType<typeof setTimeout> | null = null;
 
   public async init() {
     if (this.isInitialized) return;
@@ -88,15 +87,14 @@ class StrudelEngine {
       return `  // ${stem.name}\n  ${code}`;
     });
 
-    return `setcpm(${bpm})\nstack(\n${stemCodes.join(',\n')}\n).gain(${masterVolume.toFixed(2)})`;
+    return `stack(\n${stemCodes.join(',\n')}\n).cpm(${bpm}).gain(${masterVolume.toFixed(2)})`;
   }
 
   public async syncState(
     stems: StemChannel[],
     bpm: number,
     masterVolume: number = 0.8,
-    quantum: number = 4,
-    immediate: boolean = false
+    _quantum: number = 4
   ) {
     if (!this.isInitialized) {
       await this.init();
@@ -109,36 +107,16 @@ class StrudelEngine {
       }
     } catch (_) {}
 
-    if (this.pendingSyncTimeout) {
-      clearTimeout(this.pendingSyncTimeout);
-    }
-
     const code = this.compileASTToCode(stems, bpm, masterVolume);
 
-    if (immediate) {
-      try {
-        evaluate(code);
-      } catch (err) {
-        console.error('Strudel immediate evaluation error:', err);
-      }
-      return;
+    try {
+      evaluate(code);
+    } catch (err) {
+      console.error('Strudel evaluation error:', err);
     }
-
-    const delayMs = Math.max(20, Math.min(150, (60000 / (bpm * 4)) * (quantum / 4)));
-
-    this.pendingSyncTimeout = setTimeout(() => {
-      try {
-        evaluate(code);
-      } catch (err) {
-        console.error('Strudel evaluation error:', err);
-      }
-    }, delayMs);
   }
 
   public stop() {
-    if (this.pendingSyncTimeout) {
-      clearTimeout(this.pendingSyncTimeout);
-    }
     try {
       evaluate('silence');
     } catch (err) {
