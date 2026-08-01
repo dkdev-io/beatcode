@@ -53,6 +53,7 @@ class StrudelEngine {
     // Solo logic: If any stem has solo: true, only active solo stems play
     const hasSolo = stems.some((s) => s.solo);
     const activeStems = stems.filter((s) => {
+      if (s.volume <= 0.001) return false; // Exclude muted / 0% volume channels
       if (hasSolo) return s.solo && !s.muted;
       return !s.muted;
     });
@@ -80,14 +81,16 @@ class StrudelEngine {
         if (fx.type === 'delay') code += `.delay(${fx.value.toFixed(2)})`;
         if (fx.type === 'room') code += `.room(${fx.value.toFixed(2)})`;
         if (fx.type === 'crush') code += `.crush(${Math.floor(fx.value * 12 + 1)})`;
-        if (fx.type === 'gain') code += `.gain(${fx.value.toFixed(2)})`;
+        if (fx.type === 'gain') code += `.gain(${Math.max(0.0001, fx.value).toFixed(4)})`;
       });
 
-      code += `.gain(${stem.volume.toFixed(2)})`;
+      const safeGain = Math.max(0.0001, stem.volume).toFixed(4);
+      code += `.gain(${safeGain})`;
       return `  // ${stem.name}\n  ${code}`;
     });
 
-    return `stack(\n${stemCodes.join(',\n')}\n).cpm(${bpm}).gain(${masterVolume.toFixed(2)})`;
+    const safeMaster = Math.max(0.0001, masterVolume).toFixed(4);
+    return `stack(\n${stemCodes.join(',\n')}\n).cpm(${bpm}).gain(${safeMaster})`;
   }
 
   public async syncState(
