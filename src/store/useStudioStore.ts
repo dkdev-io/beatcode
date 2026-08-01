@@ -84,7 +84,7 @@ const DEFAULT_STEMS: StemChannel[] = [
     volume: 0.75,
     pan: 0.4,
     bank: 'sawtooth',
-    pattern: 'c1 [~ c1] eb1 f1',
+    pattern: 'c2 [~ c2] eb2 f2',
     effects: [
       { id: 'fx-3', type: 'lpf', value: 0.4 },
       { id: 'fx-4', type: 'crush', value: 0.1 }

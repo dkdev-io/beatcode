@@ -89,25 +89,21 @@ class StrudelEngine {
 
         // Tailored WebAudio synthesized drum layers according to kit selection
         if (bank.includes('808')) {
-          // Deep 808 Sub Boom Kick + Trap Snare & Hat
-          const synthKick = `note("c0*4").s("sine").lpf(180).gain(1.2)`;
+          const synthKick = `note("c1*4").s("sine").lpf(200).gain(1.1)`;
           const synthSnare = `note("~ f2 ~ f2").s("sawtooth").crush(2).gain(0.8)`;
           const synthHat = `note("c6*8").s("square").hpf(6000).gain(0.3)`;
           code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else if (bank.includes('707')) {
-          // 707 Retro Punchy Synth Drums
           const synthKick = `note("c1*4").s("triangle").lpf(300).gain(0.9)`;
           const synthSnare = `note("~ a2 ~ a2").s("square").crush(3).gain(0.7)`;
           const synthHat = `note("c6*8").s("sawtooth").hpf(4500).gain(0.4)`;
           code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else if (bank.includes('linn')) {
-          // 80s Linn Drums
           const synthKick = `note("d1*4").s("triangle").lpf(280).gain(1.0)`;
           const synthSnare = `note("~ e2 ~ e2").s("sawtooth").crush(4).gain(0.75)`;
           const synthHat = `note("c6*8").s("square").hpf(5200).gain(0.35)`;
           code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else {
-          // Default 909 Techno Punch
           const synthKick = `note("c1*4").s("sine").lpf(250).gain(0.9)`;
           const synthSnare = `note("~ g2 ~ g2").s("triangle").crush(4).gain(0.7)`;
           const synthHat = `note("c6*8").s("square").hpf(5000).gain(0.4)`;
@@ -118,7 +114,14 @@ class StrudelEngine {
         if (!validSynths.includes(soundName)) {
           soundName = stem.category === 'bass' ? 'sawtooth' : 'square';
         }
-        code = `note("${stem.pattern}").s("${soundName}")`;
+        
+        // Pitch Octave Normalizer: Ensure bass sits at punchy octave 2 (65Hz-130Hz)
+        let pat = stem.pattern;
+        if (stem.category === 'bass') {
+          pat = pat.replace(/c1/g, 'c2').replace(/eb1/g, 'eb2').replace(/f1/g, 'f2').replace(/g1/g, 'g2').replace(/a1/g, 'a2');
+        }
+
+        code = `note("${pat}").s("${soundName}")`;
       }
 
       stem.effects.forEach((fx) => {
@@ -163,24 +166,28 @@ class StrudelEngine {
 
     const code = this.compileASTToCode(stems, bpm, masterVolume, arrangementMode);
 
-    // Queue evaluation promises sequentially to guarantee atomic, ordered audio updates
-    this.lastEvalPromise = this.lastEvalPromise.then(async () => {
-      try {
-        await evaluate(code);
-      } catch (err) {
-        console.error('Strudel evaluation error:', err);
-      }
-    });
+    // Fault-tolerant Promise Queue: Always catch errors to guarantee pipeline resilience
+    this.lastEvalPromise = this.lastEvalPromise
+      .catch(() => {})
+      .then(async () => {
+        try {
+          await evaluate(code);
+        } catch (err) {
+          console.error('Strudel evaluation error:', err);
+        }
+      });
   }
 
   public stop() {
-    this.lastEvalPromise = this.lastEvalPromise.then(async () => {
-      try {
-        await evaluate('silence');
-      } catch (err) {
-        console.error('Strudel stop error:', err);
-      }
-    });
+    this.lastEvalPromise = this.lastEvalPromise
+      .catch(() => {})
+      .then(async () => {
+        try {
+          await evaluate('silence');
+        } catch (err) {
+          console.error('Strudel stop error:', err);
+        }
+      });
   }
 }
 
