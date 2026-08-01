@@ -19,7 +19,7 @@ export const GlobalControls: React.FC = () => {
   const handlePlayToggle = async () => {
     if (!isPlaying) {
       await engine.init();
-      engine.syncState(stems, bpm, masterVolume, quantum);
+      engine.syncState(stems, bpm, masterVolume, quantum, true);
     } else {
       engine.stop();
     }

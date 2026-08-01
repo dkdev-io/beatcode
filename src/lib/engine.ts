@@ -10,10 +10,15 @@ class StrudelEngine {
     if (this.isInitialized) return;
     try {
       await initAudioOnFirstClick();
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+    } catch (err) {
+      console.warn('AudioContext init note:', err);
+    } finally {
       this.isInitialized = true;
       this.setupAnalyser();
-    } catch (err) {
-      console.warn('Audio initialization deferred or failed:', err);
     }
   }
 
@@ -21,8 +26,13 @@ class StrudelEngine {
     try {
       const audioCtx = getAudioContext();
       if (audioCtx) {
-        this.analyserNode = audioCtx.createAnalyser();
-        this.analyserNode.fftSize = 64;
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+        if (!this.analyserNode) {
+          this.analyserNode = audioCtx.createAnalyser();
+          this.analyserNode.fftSize = 64;
+        }
       }
     } catch (err) {
       console.warn('AudioContext Analyser setup warning:', err);
@@ -52,10 +62,13 @@ class StrudelEngine {
       let code = '';
       if (stem.category === 'drums') {
         code = `s("${stem.pattern}")`;
-        if (stem.bank) code += `.bank("${stem.bank}")`;
+        if (stem.bank && stem.bank !== 'RolandTR909' && stem.bank !== 'RolandTR808') {
+          code += `.bank("${stem.bank}")`;
+        }
       } else {
         code = `note("${stem.pattern}")`;
-        if (stem.bank) code += `.s("${stem.bank}")`;
+        const soundName = stem.bank || 'sawtooth';
+        code += `.s("${soundName}")`;
       }
 
       stem.effects.forEach((fx) => {
@@ -74,18 +87,41 @@ class StrudelEngine {
     return `setcpm(${bpm})\nstack(\n${stemCodes.join(',\n')}\n).gain(${masterVolume.toFixed(2)})`;
   }
 
-  public syncState(stems: StemChannel[], bpm: number, masterVolume: number = 0.8, quantum: number = 4) {
-    if (!this.isInitialized) return;
+  public syncState(
+    stems: StemChannel[],
+    bpm: number,
+    masterVolume: number = 0.8,
+    quantum: number = 4,
+    immediate: boolean = false
+  ) {
+    // Ensure AudioContext is resumed
+    try {
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    } catch (_) {}
 
-    // Debounce / quantize state evaluation to keep playback smooth during rapid parameter tweaking
+    this.isInitialized = true;
+
     if (this.pendingSyncTimeout) {
       clearTimeout(this.pendingSyncTimeout);
     }
 
-    const delayMs = Math.max(20, Math.min(200, (60000 / (bpm * 4)) * (quantum / 4)));
+    const code = this.compileASTToCode(stems, bpm, masterVolume);
+
+    if (immediate) {
+      try {
+        evaluate(code);
+      } catch (err) {
+        console.error('Strudel immediate evaluation error:', err);
+      }
+      return;
+    }
+
+    const delayMs = Math.max(20, Math.min(150, (60000 / (bpm * 4)) * (quantum / 4)));
 
     this.pendingSyncTimeout = setTimeout(() => {
-      const code = this.compileASTToCode(stems, bpm, masterVolume);
       try {
         evaluate(code);
       } catch (err) {
@@ -98,7 +134,6 @@ class StrudelEngine {
     if (this.pendingSyncTimeout) {
       clearTimeout(this.pendingSyncTimeout);
     }
-    if (!this.isInitialized) return;
     try {
       evaluate('silence');
     } catch (err) {
