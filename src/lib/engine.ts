@@ -71,17 +71,13 @@ class StrudelEngine {
     const stemCodes = activeStems.map((stem) => {
       let code = '';
       if (stem.category === 'drums') {
-        // Guaranteed WebAudio synthesized drums + sample layer
-        const synthKick = `note("c1*4").s("sine").lpf(250).gain(0.9)`;
-        const synthSnare = `note("~ g2 ~ g2").s("triangle").crush(4).gain(0.7)`;
-        const synthHat = `note("c6*8").s("square").hpf(5000).gain(0.4)`;
-        code = `stack(s("${stem.pattern}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
+        code = `s("${stem.pattern}")`;
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
         if (!validSynths.includes(soundName)) {
           soundName = stem.category === 'bass' ? 'sawtooth' : 'square';
         }
-        code = `s("${soundName}").note("${stem.pattern}")`;
+        code = `note("${stem.pattern}").s("${soundName}")`;
       }
 
       stem.effects.forEach((fx) => {
