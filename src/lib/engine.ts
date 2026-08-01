@@ -4,6 +4,7 @@ import type { StemChannel, ArrangementMode } from '../store/useStudioStore';
 class StrudelEngine {
   private isInitialized = false;
   private analyserNode: AnalyserNode | null = null;
+  private lastEvalPromise: Promise<any> = Promise.resolve();
 
   public async init() {
     if (this.isInitialized) return;
@@ -70,7 +71,11 @@ class StrudelEngine {
     const stemCodes = activeStems.map((stem) => {
       let code = '';
       if (stem.category === 'drums') {
-        code = `s("${stem.pattern}")`;
+        // Guaranteed WebAudio synthesized drums + sample layer
+        const synthKick = `note("c1*4").s("sine").lpf(250).gain(0.9)`;
+        const synthSnare = `note("~ g2 ~ g2").s("triangle").crush(4).gain(0.7)`;
+        const synthHat = `note("c6*8").s("square").hpf(5000).gain(0.4)`;
+        code = `stack(s("${stem.pattern}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
         if (!validSynths.includes(soundName)) {
@@ -121,19 +126,24 @@ class StrudelEngine {
 
     const code = this.compileASTToCode(stems, bpm, masterVolume, arrangementMode);
 
-    try {
-      evaluate(code);
-    } catch (err) {
-      console.error('Strudel evaluation error:', err);
-    }
+    // Queue evaluation promises sequentially to guarantee atomic, ordered audio updates
+    this.lastEvalPromise = this.lastEvalPromise.then(async () => {
+      try {
+        await evaluate(code);
+      } catch (err) {
+        console.error('Strudel evaluation error:', err);
+      }
+    });
   }
 
   public stop() {
-    try {
-      evaluate('silence');
-    } catch (err) {
-      console.error('Strudel stop error:', err);
-    }
+    this.lastEvalPromise = this.lastEvalPromise.then(async () => {
+      try {
+        await evaluate('silence');
+      } catch (err) {
+        console.error('Strudel stop error:', err);
+      }
+    });
   }
 }
 
