@@ -64,7 +64,7 @@ class StrudelEngine {
       return !s.muted;
     });
 
-    if (activeStems.length === 0) return 'silence';
+    if (activeStems.length === 0) return 'stack().gain(0)';
 
     const validSynths = ['sawtooth', 'square', 'sine', 'triangle', 'piano', 'organ'];
 
@@ -75,35 +75,30 @@ class StrudelEngine {
         let patternStr = stem.pattern;
 
         if (bank.includes('808')) {
-          // 808 Trap: Deep Sub Boom Kick + Crisp Trap Snare & Sizzling Hihats
           patternStr = patternStr.replace(/\bbd\b/g, '808bd').replace(/\bsd\b/g, '808sd').replace(/\bhh\b/g, '808oh');
           const synthKick = `note("c0*4").s("sine").gain(1.4)`;
           const synthSnare = `note("~ d3 ~ d3").s("sawtooth").crush(2).gain(0.85)`;
           const synthHat = `note("c7*16").s("square").hpf(7000).gain(0.35)`;
           code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else if (bank.includes('707')) {
-          // 707 Synthwave: Punchy Gated Retro Drums
           patternStr = patternStr.replace(/\bbd\b/g, '707bd').replace(/\bsd\b/g, '707sd').replace(/\bhh\b/g, '707');
           const synthKick = `note("g1*4").s("square").lpf(350).gain(1.0)`;
           const synthSnare = `note("~ a2 ~ a2").s("sawtooth").hpf(1200).crush(3).gain(0.9)`;
           const synthHat = `note("c6*8").s("sawtooth").hpf(4000).gain(0.4)`;
           code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else if (bank.includes('linn')) {
-          // 80s LinnDrum: Tight Electro Percussion
           patternStr = patternStr.replace(/\bbd\b/g, 'linn').replace(/\bsd\b/g, 'linn').replace(/\bhh\b/g, 'linn');
           const synthKick = `note("d1*4").s("triangle").lpf(280).gain(1.1)`;
           const synthSnare = `note("~ f#2 ~ f#2").s("sawtooth").crush(4).gain(0.8)`;
           const synthHat = `note("c6*8").s("square").hpf(5500).gain(0.35)`;
           code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else if (bank.includes('casio')) {
-          // Lo-Fi Casio Mini Toy Drum Machine
           patternStr = patternStr.replace(/\bbd\b/g, 'casio').replace(/\bsd\b/g, 'casio').replace(/\bhh\b/g, 'casio');
           const synthKick = `note("e2*4").s("square").crush(5).gain(0.9)`;
           const synthSnare = `note("~ e3 ~ e3").s("square").crush(6).gain(0.85)`;
           const synthHat = `note("c7*8").s("triangle").crush(7).gain(0.4)`;
           code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else {
-          // 909 Techno: Heavy Hardcore Techno Kick & Snare
           const synthKick = `note("c1*4").s("sine").lpf(250).gain(1.0)`;
           const synthSnare = `note("~ g2 ~ g2").s("triangle").crush(4).gain(0.75)`;
           const synthHat = `note("c6*8").s("square").hpf(5000).gain(0.4)`;
@@ -115,7 +110,6 @@ class StrudelEngine {
           soundName = stem.category === 'bass' ? 'sawtooth' : 'square';
         }
 
-        // Pitch Octave Normalizer: Ensure bass sits at punchy octave 2 (65Hz-130Hz)
         let pat = stem.pattern;
         if (stem.category === 'bass') {
           pat = pat.replace(/c1/g, 'c2').replace(/eb1/g, 'eb2').replace(/f1/g, 'f2').replace(/g1/g, 'g2').replace(/a1/g, 'a2');
@@ -183,7 +177,7 @@ class StrudelEngine {
       .catch(() => {})
       .then(async () => {
         try {
-          await evaluate('silence');
+          await evaluate('stack().gain(0)');
         } catch (err) {
           console.error('Strudel stop error:', err);
         }
