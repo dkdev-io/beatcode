@@ -24,7 +24,7 @@ export const StemPalette: React.FC = () => {
       solo: false,
       volume: 0.8,
       bank: 'sawtooth',
-      pattern: 'c1 eb1 g1 bb1',
+      pattern: 'c2 eb2 g2 bb2',
       effects: [
         { id: 'fx-b2', type: 'lpf', value: 0.4 },
         { id: 'fx-b3', type: 'crush', value: 0.2 }
@@ -36,7 +36,7 @@ export const StemPalette: React.FC = () => {
       muted: false,
       solo: false,
       volume: 0.7,
-      bank: 'gm_lead',
+      bank: 'square',
       pattern: 'g4 c5 e5 g5',
       effects: [{ id: 'fx-b4', type: 'delay', value: 0.4 }]
     },

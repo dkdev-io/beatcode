@@ -122,7 +122,7 @@ export async function generateTrackAST(prompt: string): Promise<StudioJSONPayloa
       solo: false,
       volume: 0.85,
       bank: 'sawtooth',
-      pattern: 'c1 [~ c1] eb1 [f1 g1]',
+      pattern: 'c2 [~ c2] eb2 [f2 g2]',
       effects: [
         { id: `fx-b1-${Date.now()}`, type: 'lpf', value: 0.4 },
         { id: `fx-b2-${Date.now()}`, type: 'crush', value: 0.2 }
@@ -150,7 +150,7 @@ export async function generateTrackAST(prompt: string): Promise<StudioJSONPayloa
       solo: false,
       volume: 0.8,
       bank: 'sawtooth',
-      pattern: 'c1 [~ c1] g1 f1',
+      pattern: 'c2 [~ c2] g2 f2',
       effects: [{ id: `fx-b1-${Date.now()}`, type: 'lpf', value: 0.35 }]
     });
   }
@@ -177,8 +177,8 @@ export async function generateTrackAST(prompt: string): Promise<StudioJSONPayloa
       muted: false,
       solo: false,
       volume: 0.68,
-      bank: 'gm_lead',
-      pattern: '~ [g4 c5] ~ e5',
+      bank: 'square',
+      pattern: 'g4 c5 e5 g5',
       effects: [
         { id: `fx-l1-${Date.now()}`, type: 'delay', value: 0.5 },
         { id: `fx-l2-${Date.now()}`, type: 'room', value: 0.6 }
@@ -191,7 +191,7 @@ export async function generateTrackAST(prompt: string): Promise<StudioJSONPayloa
       muted: false,
       solo: false,
       volume: 0.65,
-      bank: 'gm_lead',
+      bank: 'square',
       pattern: 'c4 e4 g4 b4',
       effects: [{ id: `fx-l1-${Date.now()}`, type: 'delay', value: 0.3 }]
     });
