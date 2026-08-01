@@ -72,9 +72,6 @@ class StrudelEngine {
       let code = '';
       if (stem.category === 'drums') {
         code = `s("${stem.pattern}")`;
-        if (stem.bank && stem.bank.trim() !== '') {
-          code += `.bank("${stem.bank.trim()}")`;
-        }
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
         if (!validSynths.includes(soundName)) {
