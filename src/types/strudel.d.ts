@@ -17,3 +17,7 @@ declare module '@strudel/webaudio' {
   export function getAudioContext(): AudioContext;
   export function samples(urlMap: any): void;
 }
+
+declare module 'superdough' {
+  export function registerSound(name: string, onTrigger: (t: number, value: any, onended: () => void) => void, data?: any): void;
+}
