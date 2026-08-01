@@ -12,6 +12,13 @@ class StrudelEngine {
       await initAudioOnFirstClick();
       await initStrudel();
 
+      // Preload standard dirt sample soundbank (bd, sd, hh, cp, rim, cb, 808, 707, linn, casio, perc, etc.)
+      try {
+        await evaluate('samples("github:tidalcycles/dirt-samples")');
+      } catch (e) {
+        console.warn('Dirt-samples preload notification:', e);
+      }
+
       const ctx = getAudioContext();
       if (ctx && ctx.state === 'suspended') {
         await ctx.resume();
@@ -74,25 +81,31 @@ class StrudelEngine {
         const bank = (stem.bank || 'RolandTR909').toLowerCase();
         let patternStr = stem.pattern;
 
-        // Map drum kit selection cleanly to authentic Strudel sample soundbanks
-        if (bank.includes('808')) {
-          patternStr = patternStr.replace(/\bbd\b/g, '808bd').replace(/\bsd\b/g, '808sd').replace(/\bhh\b/g, '808oh');
-        } else if (bank.includes('707')) {
-          patternStr = patternStr.replace(/\bbd\b/g, '707bd').replace(/\bsd\b/g, '707sd').replace(/\bhh\b/g, '707');
-        } else if (bank.includes('linn')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'linn').replace(/\bsd\b/g, 'linn').replace(/\bhh\b/g, 'linn');
-        } else if (bank.includes('club') || bank.includes('edm')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'clubkick').replace(/\bsd\b/g, 'clubsnare').replace(/\bhh\b/g, 'clubhat');
-        } else if (bank.includes('acoustic')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'drum:0').replace(/\bsd\b/g, 'drum:1').replace(/\bhh\b/g, 'drum:2');
-        } else if (bank.includes('casio')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'casiobd').replace(/\bsd\b/g, 'casiosd').replace(/\bhh\b/g, 'casiohh');
-        } else if (bank.includes('perc')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'perc:0').replace(/\bsd\b/g, 'perc:1').replace(/\bhh\b/g, 'perc:2');
-        }
+        if (['sine', 'triangle', 'sawtooth', 'square'].includes(bank)) {
+          // Pure WebAudio Synth Drum Mode (100% offline with decay envelope percussion)
+          const synthWave = bank;
+          const k = `note("c1*4").s("${synthWave}").lpf(300).decay(0.12).gain(1.2)`;
+          const s = `note("~ e2 ~ e2").s("${synthWave}").crush(3).decay(0.15).gain(0.9)`;
+          const h = `note("c6*8").s("${synthWave}").hpf(4500).decay(0.06).gain(0.4)`;
+          code = `stack(${k}, ${s}, ${h})`;
+        } else {
+          // Sample-based Drum Kit Mode (dirt-samples: 909, 808, 707, linn, casio, acoustic, perc)
+          if (bank.includes('808')) {
+            patternStr = patternStr.replace(/\bbd\b/g, '808bd').replace(/\bsd\b/g, '808sd').replace(/\bhh\b/g, '808oh');
+          } else if (bank.includes('707')) {
+            patternStr = patternStr.replace(/\bbd\b/g, '707bd').replace(/\bsd\b/g, '707sd').replace(/\bhh\b/g, '707');
+          } else if (bank.includes('linn')) {
+            patternStr = patternStr.replace(/\bbd\b/g, 'linn').replace(/\bsd\b/g, 'linn').replace(/\bhh\b/g, 'linn');
+          } else if (bank.includes('acoustic') || bank.includes('rock')) {
+            patternStr = patternStr.replace(/\bbd\b/g, 'drum:0').replace(/\bsd\b/g, 'drum:1').replace(/\bhh\b/g, 'drum:2');
+          } else if (bank.includes('casio')) {
+            patternStr = patternStr.replace(/\bbd\b/g, 'casiobd').replace(/\bsd\b/g, 'casiosd').replace(/\bhh\b/g, 'casiohh');
+          } else if (bank.includes('perc')) {
+            patternStr = patternStr.replace(/\bbd\b/g, 'perc:0').replace(/\bsd\b/g, 'perc:1').replace(/\bhh\b/g, 'perc:2');
+          }
 
-        // Pure authentic sample-based drum pattern output
-        code = `s("${patternStr}")`;
+          code = `s("${patternStr}")`;
+        }
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
         if (!validSynths.includes(soundName)) {
