@@ -149,14 +149,47 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
               placeholder='e.g., bd*4, [~ sd]*2'
               className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-lg px-3 py-1.5 font-mono text-xs md:text-sm text-cyan-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 shadow-inner"
             />
-            <input
-              type="text"
-              value={stem.bank || ''}
-              onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
-              placeholder="Bank (e.g. 909)"
-              className="w-24 md:w-32 bg-zinc-950/80 border border-zinc-800 rounded-lg px-2.5 py-1.5 font-mono text-xs text-zinc-300 focus:outline-none focus:border-cyan-500"
-            />
+            {stem.category === 'drums' ? (
+              <select
+                value={stem.bank || 'RolandTR909'}
+                onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
+                className="w-28 md:w-36 bg-zinc-950/90 border border-zinc-800 text-rose-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-rose-500 cursor-pointer"
+                title="Select Drum Kit Soundbank"
+              >
+                <option value="RolandTR909">🥁 909 Techno</option>
+                <option value="RolandTR808">🥁 808 Trap</option>
+                <option value="RolandTR707">🥁 707 Synthwave</option>
+                <option value="LinnDrum">🥁 80s Linn</option>
+                <option value="Acoustic">🥁 Acoustic</option>
+                <option value="casio">🥁 Casio Mini</option>
+              </select>
+            ) : (
+              <select
+                value={stem.bank || 'sawtooth'}
+                onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
+                className="w-28 md:w-36 bg-zinc-950/90 border border-zinc-800 text-cyan-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
+                title="Select Synth Waveform / Instrument"
+              >
+                <option value="sawtooth">🎹 Sawtooth</option>
+                <option value="square">🎹 Square Wave</option>
+                <option value="sine">🎹 Sub Sine</option>
+                <option value="triangle">🎹 Soft Triangle</option>
+                <option value="piano">🎹 Piano Synth</option>
+                <option value="organ">🎹 Organ Synth</option>
+              </select>
+            )}
           </div>
+          {stem.category === 'drums' && (
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[10px] font-mono text-zinc-400">
+              <span className="text-zinc-500 text-[9px] uppercase font-semibold">Sounds:</span>
+              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' bd' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">bd (kick)</button>
+              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' sd' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">sd (snare)</button>
+              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' hh' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">hh (hihat)</button>
+              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' cp' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">cp (clap)</button>
+              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' rim' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">rim (rimshot)</button>
+              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' cb' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">cb (cowbell)</button>
+            </div>
+          )}
         </div>
 
         {/* Volume & FX Controls */}
