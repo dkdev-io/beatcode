@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Disc3, Zap } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
+import { engine } from '../../lib/engine';
 
 export const BeatRadar: React.FC = () => {
   const { isPlaying, stems, bpm } = useStudioStore();
@@ -44,19 +45,45 @@ export const BeatRadar: React.FC = () => {
       ctx.stroke();
 
       if (isPlaying) {
+        // Retrieve live frequency spectrum from WebAudio Engine
+        const freqData = engine.getAnalyserData();
+        const avgEnergy = freqData.length > 0
+          ? freqData.reduce((a, b) => a + b, 0) / (freqData.length * 255)
+          : 0.2;
+
         // Rotating radar sweep line
         angle += 0.02 * (bpm / 120);
 
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, radius, angle - 0.2, angle);
+        ctx.arc(centerX, centerY, radius, angle - 0.25, angle);
         ctx.closePath();
 
         const grad = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, radius);
-        grad.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+        grad.addColorStop(0, 'rgba(6, 182, 212, 0.45)');
         grad.addColorStop(1, 'rgba(99, 102, 241, 0.05)');
         ctx.fillStyle = grad;
         ctx.fill();
+
+        // Render Audio Frequency Arc Bars
+        const barCount = 16;
+        for (let i = 0; i < barCount; i++) {
+          const barAngle = (i / barCount) * Math.PI * 2;
+          const val = freqData[i % freqData.length] || Math.floor(Math.sin(angle * 2 + i) * 60 + 100);
+          const barHeight = (val / 255) * (radius * 0.35);
+
+          const bx1 = centerX + Math.cos(barAngle) * (radius * 0.85);
+          const by1 = centerY + Math.sin(barAngle) * (radius * 0.85);
+          const bx2 = centerX + Math.cos(barAngle) * (radius * 0.85 + barHeight);
+          const by2 = centerY + Math.sin(barAngle) * (radius * 0.85 + barHeight);
+
+          ctx.beginPath();
+          ctx.moveTo(bx1, by1);
+          ctx.lineTo(bx2, by2);
+          ctx.strokeStyle = `hsl(${(i * 20 + angle * 50) % 360}, 90%, 65%)`;
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
 
         // Render Active Stem Hap Orbits
         const activeStems = stems.filter((s) => !s.muted);
@@ -77,19 +104,20 @@ export const BeatRadar: React.FC = () => {
           };
 
           const color = colorMap[stem.category] || '#06b6d4';
+          const pulseSize = 6 + (avgEnergy * 10) + Math.sin(angle * 4 + index) * 3;
 
           // Pulse node
           ctx.beginPath();
-          ctx.arc(px, py, 6 + Math.sin(angle * 4 + index) * 3, 0, Math.PI * 2);
+          ctx.arc(px, py, pulseSize, 0, Math.PI * 2);
           ctx.fillStyle = color;
           ctx.shadowColor = color;
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 14;
           ctx.fill();
           ctx.shadowBlur = 0;
 
           // Pulse ring
           ctx.beginPath();
-          ctx.arc(px, py, 12 + Math.sin(angle * 4 + index) * 4, 0, Math.PI * 2);
+          ctx.arc(px, py, pulseSize + 6, 0, Math.PI * 2);
           ctx.strokeStyle = color;
           ctx.lineWidth = 1;
           ctx.stroke();

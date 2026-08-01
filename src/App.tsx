@@ -12,10 +12,16 @@ export const App: React.FC = () => {
   // Subscribe to Zustand state changes to automatically invoke engine.syncState when playing
   useEffect(() => {
     const unsub = useStudioStore.subscribe(
-      (state) => ({ stems: state.stems, bpm: state.bpm, isPlaying: state.isPlaying }),
-      ({ stems, bpm, isPlaying }) => {
+      (state) => ({
+        stems: state.stems,
+        bpm: state.bpm,
+        masterVolume: state.masterVolume,
+        quantum: state.quantum,
+        isPlaying: state.isPlaying
+      }),
+      ({ stems, bpm, masterVolume, quantum, isPlaying }) => {
         if (isPlaying) {
-          engine.syncState(stems, bpm);
+          engine.syncState(stems, bpm, masterVolume, quantum);
         }
       },
       { fireImmediately: false }

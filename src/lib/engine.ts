@@ -1,20 +1,44 @@
-import { evaluate, initAudioOnFirstClick } from '@strudel/web';
+import { evaluate, initAudioOnFirstClick, getAudioContext } from '@strudel/web';
 import type { StemChannel } from '../store/useStudioStore';
 
 class StrudelEngine {
   private isInitialized = false;
+  private analyserNode: AnalyserNode | null = null;
+  private pendingSyncTimeout: ReturnType<typeof setTimeout> | null = null;
 
   public async init() {
     if (this.isInitialized) return;
     try {
       await initAudioOnFirstClick();
       this.isInitialized = true;
+      this.setupAnalyser();
     } catch (err) {
       console.warn('Audio initialization deferred or failed:', err);
     }
   }
 
-  public compileASTToCode(stems: StemChannel[], bpm: number): string {
+  private setupAnalyser() {
+    try {
+      const audioCtx = getAudioContext();
+      if (audioCtx) {
+        this.analyserNode = audioCtx.createAnalyser();
+        this.analyserNode.fftSize = 64;
+      }
+    } catch (err) {
+      console.warn('AudioContext Analyser setup warning:', err);
+    }
+  }
+
+  public getAnalyserData(): Uint8Array {
+    if (!this.analyserNode) {
+      return new Uint8Array(32);
+    }
+    const dataArray = new Uint8Array(this.analyserNode.frequencyBinCount);
+    this.analyserNode.getByteFrequencyData(dataArray);
+    return dataArray;
+  }
+
+  public compileASTToCode(stems: StemChannel[], bpm: number, masterVolume: number = 0.8): string {
     // Solo logic: If any stem has solo: true, only active solo stems play
     const hasSolo = stems.some((s) => s.solo);
     const activeStems = stems.filter((s) => {
@@ -47,20 +71,33 @@ class StrudelEngine {
       return `  // ${stem.name}\n  ${code}`;
     });
 
-    return `setcpm(${bpm})\nstack(\n${stemCodes.join(',\n')}\n)`;
+    return `setcpm(${bpm})\nstack(\n${stemCodes.join(',\n')}\n).gain(${masterVolume.toFixed(2)})`;
   }
 
-  public syncState(stems: StemChannel[], bpm: number) {
+  public syncState(stems: StemChannel[], bpm: number, masterVolume: number = 0.8, quantum: number = 4) {
     if (!this.isInitialized) return;
-    const code = this.compileASTToCode(stems, bpm);
-    try {
-      evaluate(code);
-    } catch (err) {
-      console.error('Strudel evaluation error:', err);
+
+    // Debounce / quantize state evaluation to keep playback smooth during rapid parameter tweaking
+    if (this.pendingSyncTimeout) {
+      clearTimeout(this.pendingSyncTimeout);
     }
+
+    const delayMs = Math.max(20, Math.min(200, (60000 / (bpm * 4)) * (quantum / 4)));
+
+    this.pendingSyncTimeout = setTimeout(() => {
+      const code = this.compileASTToCode(stems, bpm, masterVolume);
+      try {
+        evaluate(code);
+      } catch (err) {
+        console.error('Strudel evaluation error:', err);
+      }
+    }, delayMs);
   }
 
   public stop() {
+    if (this.pendingSyncTimeout) {
+      clearTimeout(this.pendingSyncTimeout);
+    }
     if (!this.isInitialized) return;
     try {
       evaluate('silence');

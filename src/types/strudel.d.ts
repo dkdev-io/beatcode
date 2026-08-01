@@ -1,6 +1,8 @@
 declare module '@strudel/web' {
   export function evaluate(code: string): any;
   export function initAudioOnFirstClick(): Promise<any>;
+  export function getAudioContext(): AudioContext;
+  export function samples(urlMap: Record<string, string>): void;
 }
 
 declare module '@strudel/core' {
@@ -10,4 +12,6 @@ declare module '@strudel/core' {
 
 declare module '@strudel/webaudio' {
   export function initAudioOnFirstClick(): Promise<any>;
+  export function getAudioContext(): AudioContext;
+  export function samples(urlMap: Record<string, string>): void;
 }
