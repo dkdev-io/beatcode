@@ -1,4 +1,4 @@
-import { evaluate, initAudioOnFirstClick, getAudioContext } from '@strudel/web';
+import { evaluate, initStrudel, initAudioOnFirstClick, getAudioContext } from '@strudel/web';
 import type { StemChannel } from '../store/useStudioStore';
 
 class StrudelEngine {
@@ -10,12 +10,14 @@ class StrudelEngine {
     if (this.isInitialized) return;
     try {
       await initAudioOnFirstClick();
+      await initStrudel();
+
       const ctx = getAudioContext();
       if (ctx && ctx.state === 'suspended') {
         await ctx.resume();
       }
     } catch (err) {
-      console.warn('AudioContext init note:', err);
+      console.warn('Strudel Engine initialization warning:', err);
     } finally {
       this.isInitialized = true;
       this.setupAnalyser();
@@ -62,9 +64,6 @@ class StrudelEngine {
       let code = '';
       if (stem.category === 'drums') {
         code = `s("${stem.pattern}")`;
-        if (stem.bank && stem.bank !== 'RolandTR909' && stem.bank !== 'RolandTR808') {
-          code += `.bank("${stem.bank}")`;
-        }
       } else {
         code = `note("${stem.pattern}")`;
         const soundName = stem.bank || 'sawtooth';
@@ -87,22 +86,23 @@ class StrudelEngine {
     return `setcpm(${bpm})\nstack(\n${stemCodes.join(',\n')}\n).gain(${masterVolume.toFixed(2)})`;
   }
 
-  public syncState(
+  public async syncState(
     stems: StemChannel[],
     bpm: number,
     masterVolume: number = 0.8,
     quantum: number = 4,
     immediate: boolean = false
   ) {
-    // Ensure AudioContext is resumed
+    if (!this.isInitialized) {
+      await this.init();
+    }
+
     try {
       const ctx = getAudioContext();
       if (ctx && ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
+        await ctx.resume();
       }
     } catch (_) {}
-
-    this.isInitialized = true;
 
     if (this.pendingSyncTimeout) {
       clearTimeout(this.pendingSyncTimeout);
