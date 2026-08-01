@@ -71,39 +71,28 @@ class StrudelEngine {
     const stemCodes = activeStems.map((stem) => {
       let code = '';
       if (stem.category === 'drums') {
-        const bank = (stem.bank || '909').toLowerCase();
+        const bank = (stem.bank || 'RolandTR909').toLowerCase();
         let patternStr = stem.pattern;
 
+        // Map drum kit selection cleanly to authentic Strudel sample soundbanks
         if (bank.includes('808')) {
           patternStr = patternStr.replace(/\bbd\b/g, '808bd').replace(/\bsd\b/g, '808sd').replace(/\bhh\b/g, '808oh');
-          const synthKick = `note("c0*4").s("sine").gain(1.4)`;
-          const synthSnare = `note("~ d3 ~ d3").s("sawtooth").crush(2).gain(0.85)`;
-          const synthHat = `note("c7*16").s("square").hpf(7000).gain(0.35)`;
-          code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else if (bank.includes('707')) {
           patternStr = patternStr.replace(/\bbd\b/g, '707bd').replace(/\bsd\b/g, '707sd').replace(/\bhh\b/g, '707');
-          const synthKick = `note("g1*4").s("square").lpf(350).gain(1.0)`;
-          const synthSnare = `note("~ a2 ~ a2").s("sawtooth").hpf(1200).crush(3).gain(0.9)`;
-          const synthHat = `note("c6*8").s("sawtooth").hpf(4000).gain(0.4)`;
-          code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
         } else if (bank.includes('linn')) {
           patternStr = patternStr.replace(/\bbd\b/g, 'linn').replace(/\bsd\b/g, 'linn').replace(/\bhh\b/g, 'linn');
-          const synthKick = `note("d1*4").s("triangle").lpf(280).gain(1.1)`;
-          const synthSnare = `note("~ f#2 ~ f#2").s("sawtooth").crush(4).gain(0.8)`;
-          const synthHat = `note("c6*8").s("square").hpf(5500).gain(0.35)`;
-          code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
+        } else if (bank.includes('club') || bank.includes('edm')) {
+          patternStr = patternStr.replace(/\bbd\b/g, 'clubkick').replace(/\bsd\b/g, 'clubsnare').replace(/\bhh\b/g, 'clubhat');
+        } else if (bank.includes('acoustic')) {
+          patternStr = patternStr.replace(/\bbd\b/g, 'drum:0').replace(/\bsd\b/g, 'drum:1').replace(/\bhh\b/g, 'drum:2');
         } else if (bank.includes('casio')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'casio').replace(/\bsd\b/g, 'casio').replace(/\bhh\b/g, 'casio');
-          const synthKick = `note("e2*4").s("square").crush(5).gain(0.9)`;
-          const synthSnare = `note("~ e3 ~ e3").s("square").crush(6).gain(0.85)`;
-          const synthHat = `note("c7*8").s("triangle").crush(7).gain(0.4)`;
-          code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
-        } else {
-          const synthKick = `note("c1*4").s("sine").lpf(250).gain(1.0)`;
-          const synthSnare = `note("~ g2 ~ g2").s("triangle").crush(4).gain(0.75)`;
-          const synthHat = `note("c6*8").s("square").hpf(5000).gain(0.4)`;
-          code = `stack(s("${patternStr}"), ${synthKick}, ${synthSnare}, ${synthHat})`;
+          patternStr = patternStr.replace(/\bbd\b/g, 'casiobd').replace(/\bsd\b/g, 'casiosd').replace(/\bhh\b/g, 'casiohh');
+        } else if (bank.includes('perc')) {
+          patternStr = patternStr.replace(/\bbd\b/g, 'perc:0').replace(/\bsd\b/g, 'perc:1').replace(/\bhh\b/g, 'perc:2');
         }
+
+        // Pure authentic sample-based drum pattern output
+        code = `s("${patternStr}")`;
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
         if (!validSynths.includes(soundName)) {

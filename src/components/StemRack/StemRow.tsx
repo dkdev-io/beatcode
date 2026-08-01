@@ -153,21 +153,23 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
               <select
                 value={stem.bank || 'RolandTR909'}
                 onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
-                className="w-28 md:w-36 bg-zinc-950/90 border border-zinc-800 text-rose-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-rose-500 cursor-pointer"
+                className="w-32 md:w-40 bg-zinc-950/90 border border-zinc-800 text-rose-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-rose-500 cursor-pointer"
                 title="Select Drum Kit Soundbank"
               >
                 <option value="RolandTR909">🥁 909 Techno</option>
                 <option value="RolandTR808">🥁 808 Trap</option>
                 <option value="RolandTR707">🥁 707 Synthwave</option>
                 <option value="LinnDrum">🥁 80s Linn</option>
-                <option value="Acoustic">🥁 Acoustic</option>
-                <option value="casio">🥁 Casio Mini</option>
+                <option value="ClubEDM">🥁 Club EDM</option>
+                <option value="Acoustic">🥁 Live Acoustic</option>
+                <option value="casio">🥁 Casio Lo-Fi</option>
+                <option value="Percussion">🥁 Afro Tribal</option>
               </select>
             ) : (
               <select
                 value={stem.bank || 'sawtooth'}
                 onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
-                className="w-28 md:w-36 bg-zinc-950/90 border border-zinc-800 text-cyan-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
+                className="w-32 md:w-40 bg-zinc-950/90 border border-zinc-800 text-cyan-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
                 title="Select Synth Waveform / Instrument"
               >
                 <option value="sawtooth">🎹 Sawtooth</option>
@@ -181,13 +183,12 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
           </div>
           {stem.category === 'drums' && (
             <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[10px] font-mono text-zinc-400">
-              <span className="text-zinc-500 text-[9px] uppercase font-semibold">Sounds:</span>
-              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' bd' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">bd (kick)</button>
-              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' sd' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">sd (snare)</button>
-              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' hh' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">hh (hihat)</button>
-              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' cp' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">cp (clap)</button>
-              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' rim' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">rim (rimshot)</button>
-              <button onClick={() => updateStem(stem.id, { pattern: stem.pattern + ' cb' })} className="px-1.5 py-0.5 rounded bg-zinc-800/80 hover:bg-rose-500/20 hover:text-rose-300 transition-colors">cb (cowbell)</button>
+              <span className="text-zinc-500 text-[9px] uppercase font-semibold">Styles:</span>
+              <button onClick={() => updateStem(stem.id, { pattern: 'bd*4, [~ sd]*2, [hh*8]' })} className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 transition-colors">4-on-Floor</button>
+              <button onClick={() => updateStem(stem.id, { pattern: 'bd [~ bd] sd [hh*16]' })} className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-colors">Trap</button>
+              <button onClick={() => updateStem(stem.id, { pattern: 'bd [~ bd] sd [hh*8], [~ cp]*2' })} className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/20 transition-colors">Funk</button>
+              <button onClick={() => updateStem(stem.id, { pattern: '[bd bd] sd [~ bd] sd, [hh*8]' })} className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/20 transition-colors">Breakbeat</button>
+              <button onClick={() => updateStem(stem.id, { pattern: 'bd perc [rim perc] [cb hh*2]' })} className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">Afro</button>
             </div>
           )}
         </div>
