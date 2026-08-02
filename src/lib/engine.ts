@@ -195,6 +195,44 @@ export function registerDrumPercussionSounds() {
   registerTribalPerc('rim', 600);
   registerTribalPerc('cp', 900);
   registerTribalPerc('cb', 750);
+
+  // 6. Extended Instrument Sound Points (piano, organ, vibraphone, marimba, flute, violin, trumpet, guitar)
+  const registerTonalSynth = (name: string, type: OscillatorType, attack: number, decay: number) => {
+    registerSound(name, (t: number, value: any, onended: () => void) => {
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        const startTime = t || ctx.currentTime;
+        const freq = value?.freq || 440;
+
+        osc.frequency.setValueAtTime(freq, startTime);
+
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.linearRampToValueAtTime((value?.gain ?? 0.6) * 0.7, startTime + attack);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + attack + decay);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + attack + decay);
+
+        setTimeout(onended, (attack + decay) * 1000);
+      } catch (_) {
+        onended();
+      }
+    });
+  };
+
+  registerTonalSynth('piano', 'triangle', 0.005, 0.4);
+  registerTonalSynth('organ', 'sine', 0.02, 0.6);
+  registerTonalSynth('vibraphone', 'sine', 0.002, 0.8);
+  registerTonalSynth('marimba', 'triangle', 0.002, 0.25);
+  registerTonalSynth('flute', 'sine', 0.05, 0.5);
+  registerTonalSynth('violin', 'sawtooth', 0.08, 0.6);
+  registerTonalSynth('trumpet', 'square', 0.03, 0.4);
+  registerTonalSynth('guitar', 'triangle', 0.004, 0.35);
 }
 
 class StrudelEngine {
@@ -214,7 +252,7 @@ class StrudelEngine {
         await ctx.resume();
       }
 
-      // Register authentic WebAudio percussion sounds (kicks, snares, hats, congas, bongos)
+      // Register authentic WebAudio percussion & expanded instrument sounds
       registerDrumPercussionSounds();
     } catch (err) {
       console.warn('Strudel Engine initialization warning:', err);
@@ -257,7 +295,20 @@ class StrudelEngine {
     arrangementMode: ArrangementMode = 'stack'
   ): string {
     const hasSolo = stems.some((s) => s.solo);
-    const validSynths = ['sawtooth', 'square', 'sine', 'triangle', 'piano', 'organ'];
+    const validSynths = [
+      'sawtooth',
+      'square',
+      'sine',
+      'triangle',
+      'piano',
+      'organ',
+      'vibraphone',
+      'marimba',
+      'flute',
+      'violin',
+      'trumpet',
+      'guitar'
+    ];
 
     const stemCodes = stems.map((stem) => {
       let code = '';
@@ -292,6 +343,15 @@ class StrudelEngine {
         }
 
         code = `note("${pat}").s("${soundName}")`;
+      }
+
+      // Apply Pace / Speed multiplier on individual stem (.fast or .slow)
+      const pace = typeof stem.pace === 'number' ? stem.pace : 1.0;
+      if (pace > 1.001) {
+        code += `.fast(${pace.toFixed(2)})`;
+      } else if (pace < 0.999 && pace > 0.001) {
+        const slowFactor = 1 / pace;
+        code += `.slow(${slowFactor.toFixed(2)})`;
       }
 
       stem.effects.forEach((fx) => {

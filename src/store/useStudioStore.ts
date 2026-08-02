@@ -18,6 +18,7 @@ export interface StemChannel {
   solo: boolean;
   volume: number; // 0.0 to 1.0
   pan?: number; // 0.0 (left) to 1.0 (right), default 0.5
+  pace?: number; // 0.25x to 4.0x speed multiplier, default 1.0
   bank?: string;
   pattern: string; // Strudel mini-notation
   effects: StemEffect[];

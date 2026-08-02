@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Trash2, BookmarkPlus, GripVertical, Plus, X, Grid } from 'lucide-react';
+import { Volume2, VolumeX, Trash2, BookmarkPlus, GripVertical, Plus, X, Grid, Gauge } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useStudioStore } from '../../store/useStudioStore';
@@ -24,6 +24,8 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
 
   const [showAddFx, setShowAddFx] = useState(false);
   const [showSeqGrid, setShowSeqGrid] = useState(false);
+
+  const currentPace = typeof stem.pace === 'number' ? stem.pace : 1.0;
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stem.id });
@@ -172,12 +174,18 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
                 className="w-32 md:w-40 bg-zinc-950/90 border border-zinc-800 text-cyan-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
                 title="Select Synth Waveform / Instrument"
               >
-                <option value="sawtooth">🎹 Sawtooth</option>
+                <option value="sawtooth">🎹 Sawtooth Synth</option>
                 <option value="square">🎹 Square Wave</option>
                 <option value="sine">🎹 Sub Sine</option>
                 <option value="triangle">🎹 Soft Triangle</option>
-                <option value="piano">🎹 Piano Synth</option>
-                <option value="organ">🎹 Organ Synth</option>
+                <option value="piano">🎹 Acoustic Piano</option>
+                <option value="organ">🎹 Hammond Organ</option>
+                <option value="vibraphone">🎹 Vibraphone</option>
+                <option value="marimba">🎹 Marimba</option>
+                <option value="flute">🎹 Synth Flute</option>
+                <option value="violin">🎻 Bow Violin</option>
+                <option value="trumpet">🎺 Brass Trumpet</option>
+                <option value="guitar">🎸 Plucked Guitar</option>
               </select>
             )}
           </div>
@@ -213,6 +221,27 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
               className="w-full accent-cyan-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
             />
             <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-zinc-500">VOL</span>
+          </div>
+
+          {/* Pace / Speed Slider */}
+          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/40 p-2 rounded-lg border border-zinc-800/50">
+            <div className="flex items-center justify-between w-full text-[10px] font-mono text-zinc-400">
+              <span className="flex items-center gap-1 text-purple-400">
+                <Gauge size={11} />
+              </span>
+              <span className="text-purple-300 font-bold">{currentPace.toFixed(2)}x</span>
+            </div>
+            <input
+              type="range"
+              min="0.25"
+              max="4.0"
+              step="0.25"
+              value={currentPace}
+              onChange={(e) => updateStem(stem.id, { pace: parseFloat(e.target.value) })}
+              className="w-full accent-purple-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+              title="Individual Channel Pace / Speed Multiplier"
+            />
+            <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-purple-400/80">PACE</span>
           </div>
 
           {/* Dynamic FX Controls */}
