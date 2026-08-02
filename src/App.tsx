@@ -1,14 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GlobalControls } from './components/GlobalControls/GlobalControls';
 import { PromptBar } from './components/PromptBar/PromptBar';
 import { StemRack } from './components/StemRack/StemRack';
 import { LiveCanvas } from './components/LiveCanvas/LiveCanvas';
 import { StemPalette } from './components/Palette/StemPalette';
 import { BeatRadar } from './components/Visualizer/BeatRadar';
+import { ImportModal } from './components/Import/ImportModal';
+import { YouTubeHackerModal } from './components/YouTube/YouTubeHackerModal';
 import { useStudioStore } from './store/useStudioStore';
 import { engine } from './lib/engine';
 
 export const App: React.FC = () => {
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isYouTubeOpen, setIsYouTubeOpen] = useState(false);
+
   // Subscribe to all store updates and sync immediately to Strudel audio engine when playing
   useEffect(() => {
     const unsub = useStudioStore.subscribe((state) => {
@@ -23,7 +28,10 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-3 sm:p-6 font-sans flex flex-col gap-6 selection:bg-cyan-500 selection:text-zinc-950">
       {/* 1. Global Controls Header */}
-      <GlobalControls />
+      <GlobalControls
+        onOpenImportModal={() => setIsImportOpen(true)}
+        onOpenYouTubeModal={() => setIsYouTubeOpen(true)}
+      />
 
       {/* 2. Prompt Bar (LLM Studio Copilot & Track Hacker Input) */}
       <PromptBar />
@@ -42,6 +50,10 @@ export const App: React.FC = () => {
           <LiveCanvas />
         </div>
       </div>
+
+      {/* 4. Modals */}
+      <ImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
+      <YouTubeHackerModal isOpen={isYouTubeOpen} onClose={() => setIsYouTubeOpen(false)} />
 
       {/* Footer / System Status */}
       <footer className="mt-8 pt-4 border-t border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-zinc-400 gap-2">

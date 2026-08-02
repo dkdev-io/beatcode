@@ -200,7 +200,8 @@ export function registerDrumPercussionSounds() {
 class StrudelEngine {
   private isInitialized = false;
   private analyserNode: AnalyserNode | null = null;
-  private lastEvalPromise: Promise<any> = Promise.resolve();
+  private pendingCode: string | null = null;
+  private isEvaluating = false;
 
   public async init() {
     if (this.isInitialized) return;
@@ -255,19 +256,10 @@ class StrudelEngine {
     masterVolume: number = 0.8,
     arrangementMode: ArrangementMode = 'stack'
   ): string {
-    // Solo logic: If any stem has solo: true, only active solo stems play
     const hasSolo = stems.some((s) => s.solo);
-    const activeStems = stems.filter((s) => {
-      if (s.volume <= 0.001) return false;
-      if (hasSolo) return s.solo && !s.muted;
-      return !s.muted;
-    });
-
-    if (activeStems.length === 0) return 'stack().gain(0)';
-
     const validSynths = ['sawtooth', 'square', 'sine', 'triangle', 'piano', 'organ'];
 
-    const stemCodes = activeStems.map((stem) => {
+    const stemCodes = stems.map((stem) => {
       let code = '';
       if (stem.category === 'drums') {
         const bank = (stem.bank || 'RolandTR909').toLowerCase();
@@ -315,10 +307,17 @@ class StrudelEngine {
         code += `.pan(${stem.pan.toFixed(2)})`;
       }
 
-      const safeGain = Math.max(0.0001, stem.volume).toFixed(4);
+      // Calculate effective channel volume based on mute, solo, and volume slider
+      let effVol = stem.volume;
+      if (stem.muted) effVol = 0;
+      if (hasSolo && !stem.solo) effVol = 0;
+
+      const safeGain = Math.max(0, effVol).toFixed(4);
       code += `.gain(${safeGain})`;
       return `  // ${stem.name}\n  ${code}`;
     });
+
+    if (stemCodes.length === 0) return 'stack().gain(0)';
 
     const combiner = arrangementMode === 'cat' ? 'cat' : 'stack';
     const safeMaster = Math.max(0.0001, masterVolume).toFixed(4);
@@ -342,30 +341,30 @@ class StrudelEngine {
       }
     } catch (_) {}
 
-    const code = this.compileASTToCode(stems, bpm, masterVolume, arrangementMode);
+    this.pendingCode = this.compileASTToCode(stems, bpm, masterVolume, arrangementMode);
+    this.processQueue();
+  }
 
-    // Fault-tolerant Promise Queue: Always catch errors to guarantee pipeline resilience
-    this.lastEvalPromise = this.lastEvalPromise
-      .catch(() => {})
-      .then(async () => {
-        try {
-          await evaluate(code);
-        } catch (err) {
-          console.error('Strudel evaluation error:', err);
-        }
-      });
+  private async processQueue() {
+    if (this.isEvaluating) return;
+    this.isEvaluating = true;
+
+    while (this.pendingCode !== null) {
+      const codeToRun = this.pendingCode;
+      this.pendingCode = null; // Clear pending before evaluation
+      try {
+        await evaluate(codeToRun);
+      } catch (err) {
+        console.error('Strudel evaluation error:', err);
+      }
+    }
+
+    this.isEvaluating = false;
   }
 
   public stop() {
-    this.lastEvalPromise = this.lastEvalPromise
-      .catch(() => {})
-      .then(async () => {
-        try {
-          await evaluate('stack().gain(0)');
-        } catch (err) {
-          console.error('Strudel stop error:', err);
-        }
-      });
+    this.pendingCode = 'stack().gain(0)';
+    this.processQueue();
   }
 }
 

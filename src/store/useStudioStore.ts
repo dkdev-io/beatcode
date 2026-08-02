@@ -26,6 +26,8 @@ export interface StemChannel {
 export interface StudioJSONPayload {
   bpm: number;
   description?: string;
+  arrangementMode?: ArrangementMode;
+  masterVolume?: number;
   stems: Omit<StemChannel, 'id'>[];
 }
 
@@ -215,11 +217,13 @@ export const useStudioStore = create<StudioState>()(
     loadPresetFromJSON: (payload) => {
       const formattedStems: StemChannel[] = payload.stems.map((s, idx) => ({
         ...s,
-        id: `stem-llm-${Date.now()}-${idx}`
+        id: `stem-${Date.now()}-${idx}`
       }));
 
       set({
         bpm: payload.bpm || get().bpm,
+        masterVolume: payload.masterVolume ?? get().masterVolume,
+        arrangementMode: payload.arrangementMode || get().arrangementMode,
         stems: formattedStems
       });
     },

@@ -1,14 +1,20 @@
 import React from 'react';
-import { Play, Square, Activity, Radio, Volume2, Layers, Repeat } from 'lucide-react';
+import { Play, Square, Activity, Radio, Volume2, Layers, Repeat, Upload, Video } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
 import { engine } from '../../lib/engine';
 
-export const GlobalControls: React.FC = () => {
+interface GlobalControlsProps {
+  onOpenImportModal: () => void;
+  onOpenYouTubeModal: () => void;
+}
+
+export const GlobalControls: React.FC<GlobalControlsProps> = ({
+  onOpenImportModal,
+  onOpenYouTubeModal
+}) => {
   const {
     bpm,
     setBpm,
-    quantum,
-    setQuantum,
     isPlaying,
     togglePlay,
     masterVolume,
@@ -49,7 +55,7 @@ export const GlobalControls: React.FC = () => {
       </div>
 
       {/* Center Controls: Play/Stop, BPM, Mode */}
-      <div className="flex items-center gap-4 flex-wrap justify-center">
+      <div className="flex items-center gap-3 flex-wrap justify-center">
         {/* Play/Stop Toggle */}
         <button
           onClick={handlePlayToggle}
@@ -122,19 +128,22 @@ export const GlobalControls: React.FC = () => {
           </button>
         </div>
 
-        {/* Quantum Boundary */}
-        <div className="hidden lg:flex flex-col items-center bg-zinc-950/80 px-3 py-1.5 rounded-xl border border-zinc-800">
-          <span className="text-[9px] uppercase font-mono text-zinc-400 font-semibold">Quantum</span>
-          <select
-            value={quantum}
-            onChange={(e) => setQuantum(Number(e.target.value))}
-            className="bg-transparent font-mono text-xs font-bold text-indigo-400 focus:outline-none cursor-pointer"
+        {/* Import & YouTube Reverse Engineer Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenImportModal}
+            className="px-3 py-2 rounded-xl bg-zinc-950/80 hover:bg-zinc-800 border border-zinc-800 text-cyan-300 font-mono text-xs font-semibold flex items-center gap-1.5 transition-all"
+            title="Import Song Project (.json or code)"
           >
-            <option value={1}>1/4 (1 beat)</option>
-            <option value={2}>2/4 (2 beats)</option>
-            <option value={4}>4/4 (1 bar)</option>
-            <option value={8}>8/4 (2 bars)</option>
-          </select>
+            <Upload size={14} /> Import
+          </button>
+          <button
+            onClick={onOpenYouTubeModal}
+            className="px-3 py-2 rounded-xl bg-gradient-to-r from-red-600/20 to-rose-600/20 hover:from-red-600/30 hover:to-rose-600/30 border border-red-500/40 text-red-300 font-mono text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+            title="Reverse Engineer a YouTube Song Link"
+          >
+            <Video size={14} className="text-red-400" /> YouTube AI
+          </button>
         </div>
       </div>
 
