@@ -147,8 +147,8 @@ class StrudelEngine {
         code += `.pan(${stem.pan.toFixed(2)})`;
       }
 
-      // Calculate effective channel volume based on mute, solo, and volume slider
-      let effVol = stem.volume;
+      // Calculate effective channel volume based on mute, solo, volume slider, and masterVolume
+      let effVol = stem.volume * masterVolume;
       if (stem.muted) effVol = 0;
       if (hasSolo && !stem.solo) effVol = 0;
 
@@ -160,8 +160,7 @@ class StrudelEngine {
     if (stemCodes.length === 0) return 'stack().gain(0)';
 
     const combiner = arrangementMode === 'cat' ? 'cat' : 'stack';
-    const safeMaster = Math.max(0.0001, masterVolume).toFixed(4);
-    return `${combiner}(\n${stemCodes.join(',\n')}\n).cpm(${bpm}).gain(${safeMaster})`;
+    return `${combiner}(\n${stemCodes.join(',\n')}\n).cpm(${bpm})`;
   }
 
   public async syncState(
