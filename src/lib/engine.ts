@@ -1,5 +1,6 @@
-import { evaluate, initStrudel, initAudioOnFirstClick, getAudioContext } from '@strudel/web';
+import { evaluate, initStrudel, initAudioOnFirstClick, getAudioContext, samples } from '@strudel/web';
 import type { StemChannel, ArrangementMode } from '../store/useStudioStore';
+import { generateRealDrumWavs } from './drumSynth';
 
 class StrudelEngine {
   private isInitialized = false;
@@ -16,6 +17,16 @@ class StrudelEngine {
       const ctx = getAudioContext();
       if (ctx && ctx.state === 'suspended') {
         await ctx.resume();
+      }
+
+      // Generate in-memory real audio WAV percussion files and register into Strudel samples engine
+      if (ctx) {
+        try {
+          const drumWavMap = generateRealDrumWavs(ctx);
+          samples(drumWavMap);
+        } catch (e) {
+          console.warn('Real drum WAV generation notice:', e);
+        }
       }
     } catch (err) {
       console.warn('Strudel Engine initialization warning:', err);
@@ -77,60 +88,23 @@ class StrudelEngine {
       let code = '';
       if (stem.category === 'drums') {
         const bank = (stem.bank || 'RolandTR909').toLowerCase();
-        const patternStr = stem.pattern.trim();
+        let patternStr = stem.pattern.trim();
 
-        // Separate pattern into comma-separated parts or single pattern
-        const parts = patternStr.split(',').map((p) => p.trim()).filter(Boolean);
-        let kickPart = '~';
-        let snarePart = '~';
-        let hatPart = '~';
-
-        if (parts.length > 1) {
-          parts.forEach((p) => {
-            if (p.includes('bd') || p.includes('kick')) kickPart = p;
-            if (p.includes('sd') || p.includes('snare') || p.includes('cp') || p.includes('rim')) snarePart = p;
-            if (p.includes('hh') || p.includes('hat') || p.includes('cb')) hatPart = p;
-          });
-        } else {
-          kickPart = patternStr;
-          snarePart = patternStr;
-          hatPart = patternStr;
-        }
-
-        // Configure synth sound parameters per kit style
-        let kNote = 'c1', kWave = 'sine', kLpf = 280, kDecay = 0.14, kGain = 1.3;
-        let sNote = 'e2', sWave = 'sawtooth', sCrush = 3, sDecay = 0.12, sGain = 0.95;
-        let hNote = 'c6', hWave = 'square', hHpf = 5500, hDecay = 0.04, hGain = 0.45;
-
+        // Map drum kit selection to registered in-memory real WAV sound names
         if (bank.includes('808')) {
-          kNote = 'c0'; kWave = 'sine'; kLpf = 200; kDecay = 0.28; kGain = 1.5; // Deep 808 sub kick
-          sNote = 'd2'; sWave = 'sawtooth'; sCrush = 2; sDecay = 0.10; sGain = 1.0; // Trap snare
-          hNote = 'c7'; hWave = 'square'; hHpf = 7500; hDecay = 0.03; hGain = 0.4; // 808 sizzle hat
+          patternStr = patternStr.replace(/\bbd\b/g, '808bd').replace(/\bsd\b/g, '808sd').replace(/\bhh\b/g, '808oh');
         } else if (bank.includes('707')) {
-          kNote = 'g1'; kWave = 'square'; kLpf = 350; kDecay = 0.13; kGain = 1.1; // 707 gated kick
-          sNote = 'a2'; sWave = 'sawtooth'; sCrush = 4; sDecay = 0.15; sGain = 0.9; // 707 gated snare
-          hNote = 'c6'; hWave = 'sawtooth'; hHpf = 4500; hDecay = 0.05; hGain = 0.4;
+          patternStr = patternStr.replace(/\bbd\b/g, '707bd').replace(/\bsd\b/g, '707sd').replace(/\bhh\b/g, '707hh');
         } else if (bank.includes('casio')) {
-          kNote = 'e2'; kWave = 'square'; kLpf = 400; kDecay = 0.10; kGain = 1.0;
-          sNote = 'e3'; sWave = 'square'; sCrush = 6; sDecay = 0.10; sGain = 0.85;
-          hNote = 'c7'; hWave = 'triangle'; hHpf = 6000; hDecay = 0.03; hGain = 0.4;
+          patternStr = patternStr.replace(/\bbd\b/g, 'casiobd').replace(/\bsd\b/g, 'casiosd').replace(/\bhh\b/g, 'casiohh');
+        } else if (bank.includes('acoustic')) {
+          patternStr = patternStr.replace(/\bbd\b/g, 'drum:0').replace(/\bsd\b/g, 'drum:1').replace(/\bhh\b/g, 'drum:2');
         } else if (bank.includes('perc')) {
-          kNote = 'g1'; kWave = 'sine'; kLpf = 320; kDecay = 0.15; kGain = 1.1; // Afro Tribal Conga Bass
-          sNote = 'c3'; sWave = 'triangle'; sCrush = 0; sDecay = 0.12; sGain = 0.95; // High Conga / Bongo
-          hNote = 'c6'; hWave = 'sawtooth'; hHpf = 6000; hDecay = 0.04; hGain = 0.4; // Shaker
+          patternStr = patternStr.replace(/\bbd\b/g, 'perc:0').replace(/\bsd\b/g, 'perc:1').replace(/\bhh\b/g, 'perc:2');
         }
 
-        const kPat = kickPart.replace(/\bbd\b|\bkick\b/g, kNote).replace(/\bsd\b|\bsnare\b|\bhh\b|\bhat\b|\bcp\b|\brim\b|\bcb\b/g, '~');
-        const sPat = snarePart.replace(/\bsd\b|\bsnare\b|\bcp\b|\brim\b/g, sNote).replace(/\bbd\b|\bkick\b|\bhh\b|\bhat\b|\bcb\b/g, '~');
-        const hPat = hatPart.replace(/\bhh\b|\bhat\b|\bcb\b/g, hNote).replace(/\bbd\b|\bkick\b|\bsd\b|\bsnare\b|\bcp\b|\brim\b/g, '~');
-
-        const kCode = `note("${kPat}").s("${kWave}").lpf(${kLpf}).decay(${kDecay}).gain(${kGain})`;
-        const sCode = sCrush > 0
-          ? `note("${sPat}").s("${sWave}").crush(${sCrush}).decay(${sDecay}).gain(${sGain})`
-          : `note("${sPat}").s("${sWave}").decay(${sDecay}).gain(${sGain})`;
-        const hCode = `note("${hPat}").s("${hWave}").hpf(${hHpf}).decay(${hDecay}).gain(${hGain})`;
-
-        code = `stack(${kCode}, ${sCode}, ${hCode})`;
+        // Pure authentic sample-based drum output (plays in-memory real WAV audio files)
+        code = `s("${patternStr}")`;
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
         if (!validSynths.includes(soundName)) {
