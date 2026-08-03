@@ -1,246 +1,5 @@
 import { evaluate, initStrudel, initAudioOnFirstClick, getAudioContext } from '@strudel/web';
-import { registerSound } from 'superdough';
 import type { StemChannel, ArrangementMode } from '../store/useStudioStore';
-
-let cachedNoiseBuffer: AudioBuffer | null = null;
-let soundsRegistered = false;
-
-function createNoiseBuffer(ctx: AudioContext): AudioBuffer {
-  const bufferSize = ctx.sampleRate * 0.2; // 200ms noise buffer
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
-  return buffer;
-}
-
-export function registerDrumPercussionSounds() {
-  if (soundsRegistered) return;
-  const ctx = getAudioContext() as AudioContext | null;
-  if (!ctx) return;
-
-  try {
-    if (!cachedNoiseBuffer) {
-      cachedNoiseBuffer = createNoiseBuffer(ctx);
-    }
-
-    // 1. Acoustic & Tribal Percussion (Conga / Bongo / African Tribal Perc)
-    const registerTribalPerc = (name: string, baseFreq: number) => {
-      registerSound(name, (t: number, _value: any, onended: () => void) => {
-        try {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-
-          osc.type = 'sine';
-          const startTime = t || ctx.currentTime;
-          const duration = 0.12;
-
-          osc.frequency.setValueAtTime(baseFreq, startTime);
-          osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.35, startTime + duration);
-
-          gain.gain.setValueAtTime(0.9, startTime);
-          gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-
-          osc.connect(gain);
-          osc.start(startTime);
-          osc.stop(startTime + duration);
-
-          setTimeout(onended, duration * 1000);
-          return { node: gain };
-        } catch (_) {
-          onended();
-        }
-      });
-    };
-
-    registerTribalPerc('perc', 360);
-    registerTribalPerc('conga', 280);
-    registerTribalPerc('bongo', 480);
-    registerTribalPerc('perc:0', 360);
-    registerTribalPerc('perc:1', 280);
-    registerTribalPerc('perc:2', 480);
-
-    // 2. Thumping Acoustic & Electronic Kicks (bd, 808bd, 707bd, linn, casio)
-    const registerKick = (name: string, startFreq: number, endFreq: number, dur: number) => {
-      registerSound(name, (t: number, _value: any, onended: () => void) => {
-        try {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-
-          osc.type = 'sine';
-          const startTime = t || ctx.currentTime;
-
-          osc.frequency.setValueAtTime(startFreq, startTime);
-          osc.frequency.exponentialRampToValueAtTime(endFreq, startTime + 0.045);
-
-          gain.gain.setValueAtTime(1.1, startTime);
-          gain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
-
-          osc.connect(gain);
-          osc.start(startTime);
-          osc.stop(startTime + dur);
-
-          setTimeout(onended, dur * 1000);
-          return { node: gain };
-        } catch (_) {
-          onended();
-        }
-      });
-    };
-
-    registerKick('bd', 160, 38, 0.15);
-    registerKick('808bd', 140, 32, 0.28);
-    registerKick('707bd', 180, 45, 0.12);
-    registerKick('linn', 150, 42, 0.14);
-    registerKick('casiobd', 170, 50, 0.10);
-    registerKick('drum:0', 160, 40, 0.16);
-
-    // 3. Snappy Noise Snares (sd, 808sd, 707sd, casio)
-    const registerSnare = (name: string, noiseFreq: number) => {
-      registerSound(name, (t: number, _value: any, onended: () => void) => {
-        try {
-          const startTime = t || ctx.currentTime;
-          const dur = 0.15;
-          const mixGain = ctx.createGain();
-
-          // White noise snap component
-          if (cachedNoiseBuffer) {
-            const noise = ctx.createBufferSource();
-            noise.buffer = cachedNoiseBuffer;
-
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'highpass';
-            filter.frequency.setValueAtTime(noiseFreq, startTime);
-
-            const noiseGain = ctx.createGain();
-            noiseGain.gain.setValueAtTime(0.7, startTime);
-            noiseGain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
-
-            noise.connect(filter);
-            filter.connect(noiseGain);
-            noiseGain.connect(mixGain);
-
-            noise.start(startTime);
-            noise.stop(startTime + dur);
-          }
-
-          // Tonal body pop component
-          const osc = ctx.createOscillator();
-          const oscGain = ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(180, startTime);
-          osc.frequency.exponentialRampToValueAtTime(80, startTime + 0.04);
-
-          oscGain.gain.setValueAtTime(0.5, startTime);
-          oscGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.08);
-
-          osc.connect(oscGain);
-          oscGain.connect(mixGain);
-
-          osc.start(startTime);
-          osc.stop(startTime + 0.08);
-
-          setTimeout(onended, dur * 1000);
-          return { node: mixGain };
-        } catch (_) {
-          onended();
-        }
-      });
-    };
-
-    registerSnare('sd', 1500);
-    registerSnare('808sd', 1200);
-    registerSnare('707sd', 1800);
-    registerSnare('casiosd', 2200);
-    registerSnare('drum:1', 1400);
-
-    // 4. Filtered Metallic Hi-Hats (hh, 808oh, 707hh, casio)
-    const registerHat = (name: string, cutoffFreq: number, dur: number) => {
-      registerSound(name, (t: number, _value: any, onended: () => void) => {
-        try {
-          const startTime = t || ctx.currentTime;
-          const gain = ctx.createGain();
-
-          if (cachedNoiseBuffer) {
-            const noise = ctx.createBufferSource();
-            noise.buffer = cachedNoiseBuffer;
-
-            const filter = ctx.createBiquadFilter();
-            filter.type = 'highpass';
-            filter.frequency.setValueAtTime(cutoffFreq, startTime);
-
-            gain.gain.setValueAtTime(0.5, startTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
-
-            noise.connect(filter);
-            filter.connect(gain);
-
-            noise.start(startTime);
-            noise.stop(startTime + dur);
-          }
-
-          setTimeout(onended, dur * 1000);
-          return { node: gain };
-        } catch (_) {
-          onended();
-        }
-      });
-    };
-
-    registerHat('hh', 7000, 0.04);
-    registerHat('808oh', 6500, 0.12);
-    registerHat('707hh', 6000, 0.05);
-    registerHat('casiohh', 8000, 0.03);
-    registerHat('drum:2', 6800, 0.05);
-
-    // 5. Rimshot, Clap & Cowbell (rim, cp, cb)
-    registerTribalPerc('rim', 600);
-    registerTribalPerc('cp', 900);
-    registerTribalPerc('cb', 750);
-
-    // 6. Extended Instrument Sound Points
-    const registerTonalSynth = (name: string, type: OscillatorType, attack: number, decay: number) => {
-      registerSound(name, (t: number, value: any, onended: () => void) => {
-        try {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = type;
-          const startTime = t || ctx.currentTime;
-          const freq = value?.freq || 440;
-
-          osc.frequency.setValueAtTime(freq, startTime);
-
-          gain.gain.setValueAtTime(0.0001, startTime);
-          gain.gain.linearRampToValueAtTime(0.7, startTime + attack);
-          gain.gain.exponentialRampToValueAtTime(0.0001, startTime + attack + decay);
-
-          osc.connect(gain);
-          osc.start(startTime);
-          osc.stop(startTime + attack + decay);
-
-          setTimeout(onended, (attack + decay) * 1000);
-          return { node: gain };
-        } catch (_) {
-          onended();
-        }
-      });
-    };
-
-    registerTonalSynth('piano', 'triangle', 0.005, 0.4);
-    registerTonalSynth('organ', 'sine', 0.02, 0.6);
-    registerTonalSynth('vibraphone', 'sine', 0.002, 0.8);
-    registerTonalSynth('marimba', 'triangle', 0.002, 0.25);
-    registerTonalSynth('flute', 'sine', 0.05, 0.5);
-    registerTonalSynth('violin', 'sawtooth', 0.08, 0.6);
-    registerTonalSynth('trumpet', 'square', 0.03, 0.4);
-    registerTonalSynth('guitar', 'triangle', 0.004, 0.35);
-
-    soundsRegistered = true;
-  } catch (err) {
-    console.warn('Error registering drum percussion sounds:', err);
-  }
-}
 
 class StrudelEngine {
   private isInitialized = false;
@@ -258,9 +17,6 @@ class StrudelEngine {
       if (ctx && ctx.state === 'suspended') {
         await ctx.resume();
       }
-
-      // Register authentic WebAudio percussion & expanded instrument sounds
-      registerDrumPercussionSounds();
     } catch (err) {
       console.warn('Strudel Engine initialization warning:', err);
     } finally {
@@ -321,29 +77,60 @@ class StrudelEngine {
       let code = '';
       if (stem.category === 'drums') {
         const bank = (stem.bank || 'RolandTR909').toLowerCase();
-        let patternStr = stem.pattern.trim();
+        const patternStr = stem.pattern.trim();
 
-        // Map drum kit selection to registered percussion sound names (use string token 707hh instead of numeric 707)
-        if (bank.includes('808')) {
-          patternStr = patternStr.replace(/\bbd\b/g, '808bd').replace(/\bsd\b/g, '808sd').replace(/\bhh\b/g, '808oh');
-        } else if (bank.includes('707')) {
-          patternStr = patternStr.replace(/\bbd\b/g, '707bd').replace(/\bsd\b/g, '707sd').replace(/\bhh\b/g, '707hh');
-        } else if (bank.includes('casio')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'casiobd').replace(/\bsd\b/g, 'casiosd').replace(/\bhh\b/g, 'casiohh');
-        } else if (bank.includes('acoustic')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'drum:0').replace(/\bsd\b/g, 'drum:1').replace(/\bhh\b/g, 'drum:2');
-        } else if (bank.includes('perc')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'perc:0').replace(/\bsd\b/g, 'perc:1').replace(/\bhh\b/g, 'perc:2');
-        }
+        // Separate pattern into comma-separated parts or single pattern
+        const parts = patternStr.split(',').map((p) => p.trim()).filter(Boolean);
+        let kickPart = '~';
+        let snarePart = '~';
+        let hatPart = '~';
 
-        // If drum pattern contains top-level commas, split into stacked s() layers to avoid mini-notation syntax errors
-        if (patternStr.includes(',')) {
-          const parts = patternStr.split(',').map((p) => p.trim()).filter(Boolean);
-          const sParts = parts.map((p) => `s("${p}")`);
-          code = `stack(${sParts.join(', ')})`;
+        if (parts.length > 1) {
+          parts.forEach((p) => {
+            if (p.includes('bd') || p.includes('kick')) kickPart = p;
+            if (p.includes('sd') || p.includes('snare') || p.includes('cp') || p.includes('rim')) snarePart = p;
+            if (p.includes('hh') || p.includes('hat') || p.includes('cb')) hatPart = p;
+          });
         } else {
-          code = `s("${patternStr}")`;
+          kickPart = patternStr;
+          snarePart = patternStr;
+          hatPart = patternStr;
         }
+
+        // Configure synth sound parameters per kit style
+        let kNote = 'c1', kWave = 'sine', kLpf = 280, kDecay = 0.14, kGain = 1.3;
+        let sNote = 'e2', sWave = 'sawtooth', sCrush = 3, sDecay = 0.12, sGain = 0.95;
+        let hNote = 'c6', hWave = 'square', hHpf = 5500, hDecay = 0.04, hGain = 0.45;
+
+        if (bank.includes('808')) {
+          kNote = 'c0'; kWave = 'sine'; kLpf = 200; kDecay = 0.28; kGain = 1.5; // Deep 808 sub kick
+          sNote = 'd2'; sWave = 'sawtooth'; sCrush = 2; sDecay = 0.10; sGain = 1.0; // Trap snare
+          hNote = 'c7'; hWave = 'square'; hHpf = 7500; hDecay = 0.03; hGain = 0.4; // 808 sizzle hat
+        } else if (bank.includes('707')) {
+          kNote = 'g1'; kWave = 'square'; kLpf = 350; kDecay = 0.13; kGain = 1.1; // 707 gated kick
+          sNote = 'a2'; sWave = 'sawtooth'; sCrush = 4; sDecay = 0.15; sGain = 0.9; // 707 gated snare
+          hNote = 'c6'; hWave = 'sawtooth'; hHpf = 4500; hDecay = 0.05; hGain = 0.4;
+        } else if (bank.includes('casio')) {
+          kNote = 'e2'; kWave = 'square'; kLpf = 400; kDecay = 0.10; kGain = 1.0;
+          sNote = 'e3'; sWave = 'square'; sCrush = 6; sDecay = 0.10; sGain = 0.85;
+          hNote = 'c7'; hWave = 'triangle'; hHpf = 6000; hDecay = 0.03; hGain = 0.4;
+        } else if (bank.includes('perc')) {
+          kNote = 'g1'; kWave = 'sine'; kLpf = 320; kDecay = 0.15; kGain = 1.1; // Afro Tribal Conga Bass
+          sNote = 'c3'; sWave = 'triangle'; sCrush = 0; sDecay = 0.12; sGain = 0.95; // High Conga / Bongo
+          hNote = 'c6'; hWave = 'sawtooth'; hHpf = 6000; hDecay = 0.04; hGain = 0.4; // Shaker
+        }
+
+        const kPat = kickPart.replace(/\bbd\b|\bkick\b/g, kNote).replace(/\bsd\b|\bsnare\b|\bhh\b|\bhat\b|\bcp\b|\brim\b|\bcb\b/g, '~');
+        const sPat = snarePart.replace(/\bsd\b|\bsnare\b|\bcp\b|\brim\b/g, sNote).replace(/\bbd\b|\bkick\b|\bhh\b|\bhat\b|\bcb\b/g, '~');
+        const hPat = hatPart.replace(/\bhh\b|\bhat\b|\bcb\b/g, hNote).replace(/\bbd\b|\bkick\b|\bsd\b|\bsnare\b|\bcp\b|\brim\b/g, '~');
+
+        const kCode = `note("${kPat}").s("${kWave}").lpf(${kLpf}).decay(${kDecay}).gain(${kGain})`;
+        const sCode = sCrush > 0
+          ? `note("${sPat}").s("${sWave}").crush(${sCrush}).decay(${sDecay}).gain(${sGain})`
+          : `note("${sPat}").s("${sWave}").decay(${sDecay}).gain(${sGain})`;
+        const hCode = `note("${hPat}").s("${hWave}").hpf(${hHpf}).decay(${hDecay}).gain(${hGain})`;
+
+        code = `stack(${kCode}, ${sCode}, ${hCode})`;
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
         if (!validSynths.includes(soundName)) {
@@ -380,8 +167,8 @@ class StrudelEngine {
         code += `.pan(${stem.pan.toFixed(2)})`;
       }
 
-      // Calculate effective channel volume based on mute, solo, volume slider, and masterVolume
-      let effVol = stem.volume * masterVolume;
+      // Calculate effective channel volume based on mute, solo, and volume slider
+      let effVol = stem.volume;
       if (stem.muted) effVol = 0;
       if (hasSolo && !stem.solo) effVol = 0;
 
@@ -393,7 +180,8 @@ class StrudelEngine {
     if (stemCodes.length === 0) return 'stack().gain(0)';
 
     const combiner = arrangementMode === 'cat' ? 'cat' : 'stack';
-    return `${combiner}(\n${stemCodes.join(',\n')}\n).cpm(${bpm})`;
+    const safeMaster = Math.max(0.0001, masterVolume).toFixed(4);
+    return `${combiner}(\n${stemCodes.join(',\n')}\n).cpm(${bpm}).gain(${safeMaster})`;
   }
 
   public async syncState(
@@ -404,8 +192,6 @@ class StrudelEngine {
   ) {
     if (!this.isInitialized) {
       await this.init();
-    } else {
-      registerDrumPercussionSounds();
     }
 
     try {
