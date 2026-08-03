@@ -26,6 +26,7 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
   const [showSeqGrid, setShowSeqGrid] = useState(false);
 
   const currentPace = typeof stem.pace === 'number' ? stem.pace : 1.0;
+  const currentPan = typeof stem.pan === 'number' ? stem.pan : 0.5;
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stem.id });
@@ -201,15 +202,21 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
           )}
         </div>
 
-        {/* Volume & FX Controls */}
-        <div className="flex items-center gap-3 w-full xl:w-auto overflow-x-auto py-1 scrollbar-thin">
+        {/* Mixer Sliders & FX Controls */}
+        <div className="flex items-center gap-2.5 w-full xl:w-auto overflow-x-auto py-1 scrollbar-thin">
           {/* Volume Slider */}
-          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/40 p-2 rounded-lg border border-zinc-800/50">
+          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/50 p-2 rounded-lg border border-zinc-800/60 hover:border-cyan-500/30 transition-colors">
             <div className="flex items-center justify-between w-full text-[10px] font-mono text-zinc-400">
-              <span className="flex items-center gap-1 text-zinc-400">
+              <span className="flex items-center gap-1 text-cyan-400">
                 {stem.volume === 0 ? <VolumeX size={11} className="text-red-400" /> : <Volume2 size={11} />}
               </span>
-              <span className="text-cyan-400 font-bold">{Math.round(stem.volume * 100)}%</span>
+              <span
+                className="text-cyan-300 font-bold cursor-pointer hover:underline"
+                onDoubleClick={() => updateStem(stem.id, { volume: 0.8 })}
+                title="Double-click to reset volume to 80%"
+              >
+                {Math.round(stem.volume * 100)}%
+              </span>
             </div>
             <input
               type="range"
@@ -220,28 +227,86 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
               onChange={(e) => updateStem(stem.id, { volume: parseFloat(e.target.value) })}
               className="w-full accent-cyan-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
             />
-            <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-zinc-500">VOL</span>
+            <span
+              className="text-[9px] uppercase font-mono font-bold tracking-wider text-zinc-400 cursor-pointer hover:text-cyan-300"
+              onDoubleClick={() => updateStem(stem.id, { volume: 0.8 })}
+              title="Double-click to reset"
+            >
+              VOL
+            </span>
           </div>
 
-          {/* Pace / Speed Slider */}
-          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/40 p-2 rounded-lg border border-zinc-800/50">
-            <div className="flex items-center justify-between w-full text-[10px] font-mono text-zinc-400">
+          {/* Pace / Speed Multiplier Slider */}
+          <div className="flex flex-col items-center gap-1 w-24 shrink-0 bg-zinc-950/60 p-2 rounded-lg border border-purple-900/40 hover:border-purple-500/50 transition-colors shadow-inner">
+            <div className="flex items-center justify-between w-full text-[10px] font-mono">
               <span className="flex items-center gap-1 text-purple-400">
                 <Gauge size={11} />
               </span>
-              <span className="text-purple-300 font-bold">{currentPace.toFixed(2)}x</span>
+              <span
+                className="text-purple-300 font-bold cursor-pointer hover:underline"
+                onDoubleClick={() => updateStem(stem.id, { pace: 1.0 })}
+                title="Double-click to reset pace (1.00x)"
+              >
+                {currentPace.toFixed(2)}x
+              </span>
             </div>
             <input
               type="range"
               min="0.25"
-              max="4.0"
-              step="0.25"
+              max="4.00"
+              step="0.05"
               value={currentPace}
               onChange={(e) => updateStem(stem.id, { pace: parseFloat(e.target.value) })}
               className="w-full accent-purple-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
-              title="Individual Channel Pace / Speed Multiplier"
+              title="Adjust Pace / Speed Multiplier (.fast / .slow)"
             />
-            <span className="text-[9px] uppercase font-mono font-bold tracking-wider text-purple-400/80">PACE</span>
+            <div className="flex items-center justify-between w-full text-[8px] font-mono font-bold">
+              <span
+                className="text-purple-400 uppercase tracking-wider cursor-pointer hover:text-purple-300"
+                onDoubleClick={() => updateStem(stem.id, { pace: 1.0 })}
+                title="Double-click to reset (1.00x)"
+              >
+                PACE
+              </span>
+              <span className="text-[8px] text-purple-300/70 font-mono">
+                {currentPace > 1 ? `.fast` : currentPace < 1 ? `.slow` : `1x`}
+              </span>
+            </div>
+          </div>
+
+          {/* Stereo Pan Slider */}
+          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/50 p-2 rounded-lg border border-zinc-800/60 hover:border-amber-500/30 transition-colors">
+            <div className="flex items-center justify-between w-full text-[10px] font-mono text-zinc-400">
+              <span className="text-amber-400 text-[9px] font-bold">PAN</span>
+              <span
+                className="text-amber-300 font-bold cursor-pointer hover:underline"
+                onDoubleClick={() => updateStem(stem.id, { pan: 0.5 })}
+                title="Double-click to center pan (0.50)"
+              >
+                {currentPan === 0.5
+                  ? 'C'
+                  : currentPan < 0.5
+                  ? `L${Math.round((0.5 - currentPan) * 200)}`
+                  : `R${Math.round((currentPan - 0.5) * 200)}`}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.02"
+              value={currentPan}
+              onChange={(e) => updateStem(stem.id, { pan: parseFloat(e.target.value) })}
+              className="w-full accent-amber-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg"
+              title="Stereo Panning (Left/Center/Right)"
+            />
+            <span
+              className="text-[9px] uppercase font-mono font-bold tracking-wider text-amber-500/80 cursor-pointer hover:text-amber-300"
+              onDoubleClick={() => updateStem(stem.id, { pan: 0.5 })}
+              title="Double-click to center"
+            >
+              PAN
+            </span>
           </div>
 
           {/* Dynamic FX Controls */}

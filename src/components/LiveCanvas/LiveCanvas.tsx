@@ -4,10 +4,10 @@ import { useStudioStore } from '../../store/useStudioStore';
 import { engine } from '../../lib/engine';
 
 export const LiveCanvas: React.FC = () => {
-  const { stems, bpm, isPlaying } = useStudioStore();
+  const { stems, bpm, isPlaying, masterVolume, arrangementMode } = useStudioStore();
   const [copied, setCopied] = useState(false);
 
-  const compiledCode = engine.compileASTToCode(stems, bpm);
+  const compiledCode = engine.compileASTToCode(stems, bpm, masterVolume, arrangementMode);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(compiledCode);
