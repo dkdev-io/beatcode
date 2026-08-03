@@ -1,6 +1,24 @@
-import { evaluate, initStrudel, initAudioOnFirstClick, getAudioContext } from '@strudel/web';
-import { registerSound } from 'superdough';
+import { evaluate, initStrudel, initAudioOnFirstClick, getAudioContext, registerSound } from '@strudel/web';
 import type { StemChannel, ArrangementMode } from '../store/useStudioStore';
+
+// Split only on top-level commas, respecting []/<>/{}/() nesting used by Strudel mini-notation
+function splitTopLevelCommas(str: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of str) {
+    if (ch === '[' || ch === '<' || ch === '{' || ch === '(') depth++;
+    else if (ch === ']' || ch === '>' || ch === '}' || ch === ')') depth = Math.max(0, depth - 1);
+    if (ch === ',' && depth === 0) {
+      parts.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  parts.push(cur);
+  return parts.map((p) => p.trim()).filter(Boolean);
+}
 
 let cachedNoiseBuffer: AudioBuffer | null = null;
 let soundsRegistered = false;
@@ -58,9 +76,10 @@ export function registerDrumPercussionSounds() {
     registerTribalPerc('perc', 360);
     registerTribalPerc('conga', 280);
     registerTribalPerc('bongo', 480);
-    registerTribalPerc('perc:0', 360);
-    registerTribalPerc('perc:1', 280);
-    registerTribalPerc('perc:2', 480);
+    // Colon-free names for the Afro Tribal kit (mini-notation parses "perc:0" as sound "perc" idx 0,
+    // so colon-suffixed keys are unreachable). bd/sd/hh remap to these for distinct tribal voices.
+    registerTribalPerc('percsn', 280);
+    registerTribalPerc('perchh', 480);
 
     // 2. Thumping Acoustic & Electronic Kicks (bd, 808bd, 707bd, linn, casio)
     const registerKick = (name: string, startFreq: number, endFreq: number, dur: number) => {
@@ -96,7 +115,7 @@ export function registerDrumPercussionSounds() {
     registerKick('707bd', 180, 45, 0.12);
     registerKick('linn', 150, 42, 0.14);
     registerKick('casiobd', 170, 50, 0.10);
-    registerKick('drum:0', 160, 40, 0.16);
+    registerKick('acbd', 160, 40, 0.16);
 
     // 3. Snappy Noise Snares (sd, 808sd, 707sd, casio)
     const registerSnare = (name: string, noiseFreq: number) => {
@@ -153,7 +172,7 @@ export function registerDrumPercussionSounds() {
     registerSnare('808sd', 1200);
     registerSnare('707sd', 1800);
     registerSnare('casiosd', 2200);
-    registerSnare('drum:1', 1400);
+    registerSnare('acsd', 1400);
 
     // 4. Filtered Metallic Hi-Hats (hh, 808oh, 707, casio)
     const registerHat = (name: string, cutoffFreq: number, dur: number) => {
@@ -192,7 +211,7 @@ export function registerDrumPercussionSounds() {
     registerHat('808oh', 6500, 0.12);
     registerHat('707', 6000, 0.05);
     registerHat('casiohh', 8000, 0.03);
-    registerHat('drum:2', 6800, 0.05);
+    registerHat('achh', 6800, 0.05);
 
     // 5. Rimshot, Clap & Cowbell (rim, cp, cb)
     registerTribalPerc('rim', 600);
@@ -243,6 +262,14 @@ export function registerDrumPercussionSounds() {
   }
 }
 
+// Arm superdough's first-click audio init at module load, BEFORE the user's first gesture.
+// This lets the PLAY click's own mousedown load the AudioWorklets that superdough's synths
+// and effects require. If we armed it inside init() (which runs on the click event, after
+// mousedown), the listener would miss this click and only fire on the next one.
+if (typeof document !== 'undefined') {
+  initAudioOnFirstClick();
+}
+
 class StrudelEngine {
   private isInitialized = false;
   private analyserNode: AnalyserNode | null = null;
@@ -252,9 +279,12 @@ class StrudelEngine {
   public async init() {
     if (this.isInitialized) return;
     try {
+      // The listener was armed at module load, so this resolves once the current gesture's
+      // mousedown has loaded the AudioWorklets — no deadlock, and worklets are ready before evaluate.
       await initAudioOnFirstClick();
       await initStrudel();
 
+      // We are inside a user gesture (PLAY click), so create + resume the context directly.
       const ctx = getAudioContext();
       if (ctx && ctx.state === 'suspended') {
         await ctx.resume();
@@ -332,18 +362,21 @@ class StrudelEngine {
         } else if (bank.includes('casio')) {
           patternStr = patternStr.replace(/\bbd\b/g, 'casiobd').replace(/\bsd\b/g, 'casiosd').replace(/\bhh\b/g, 'casiohh');
         } else if (bank.includes('acoustic')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'drum:0').replace(/\bsd\b/g, 'drum:1').replace(/\bhh\b/g, 'drum:2');
+          patternStr = patternStr.replace(/\bbd\b/g, 'acbd').replace(/\bsd\b/g, 'acsd').replace(/\bhh\b/g, 'achh');
         } else if (bank.includes('perc')) {
-          patternStr = patternStr.replace(/\bbd\b/g, 'perc:0').replace(/\bsd\b/g, 'perc:1').replace(/\bhh\b/g, 'perc:2');
+          patternStr = patternStr.replace(/\bbd\b/g, 'perc').replace(/\bsd\b/g, 'percsn').replace(/\bhh\b/g, 'perchh');
         }
 
-        // If drum pattern contains top-level commas, split into stacked s() layers to avoid mini-notation syntax errors
-        if (patternStr.includes(',')) {
-          const parts = patternStr.split(',').map((p) => p.trim()).filter(Boolean);
+        // If drum pattern contains top-level commas, split into stacked s() layers to avoid
+        // mini-notation syntax errors. Bracket-aware so commas inside [ ] < > { } stay intact.
+        const parts = splitTopLevelCommas(patternStr);
+        if (parts.length > 1) {
           const sParts = parts.map((p) => `s("${p}")`);
           code = `stack(${sParts.join(', ')})`;
+        } else if (parts.length === 1) {
+          code = `s("${parts[0]}")`;
         } else {
-          code = `s("${patternStr}")`;
+          code = 'silence';
         }
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
@@ -351,12 +384,12 @@ class StrudelEngine {
           soundName = stem.category === 'bass' ? 'sawtooth' : 'square';
         }
 
-        let pat = stem.pattern;
+        let pat = stem.pattern.trim().replace(/,\s*$/, '');
         if (stem.category === 'bass') {
           pat = pat.replace(/c1/g, 'c2').replace(/eb1/g, 'eb2').replace(/f1/g, 'f2').replace(/g1/g, 'g2').replace(/a1/g, 'a2');
         }
 
-        code = `note("${pat}").s("${soundName}")`;
+        code = pat ? `note("${pat}").s("${soundName}")` : 'silence';
       }
 
       // Apply Pace / Speed multiplier on individual stem (.fast or .slow)
