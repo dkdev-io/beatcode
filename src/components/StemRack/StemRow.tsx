@@ -65,9 +65,9 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
         isDragging ? 'shadow-2xl shadow-cyan-500/20 ring-2 ring-cyan-500/50 scale-[1.01]' : ''
       }`}
     >
-      <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-4">
-        {/* Drag Handle & Track Header */}
-        <div className="flex items-center gap-3 w-full xl:w-56 shrink-0">
+      {/* Top Row: Track Header, Category, Mute/Solo, Action Buttons */}
+      <div className="flex items-center justify-between gap-3 flex-wrap border-b border-zinc-800/60 pb-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <button
             {...attributes}
             {...listeners}
@@ -77,32 +77,31 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
             <GripVertical size={18} />
           </button>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={stem.name}
-                onChange={(e) => updateStem(stem.id, { name: e.target.value })}
-                className="font-bold text-zinc-100 bg-transparent border-b border-transparent hover:border-zinc-700 focus:border-cyan-500 focus:outline-none px-1 text-sm md:text-base w-28 md:w-32 truncate"
-              />
-              <select
-                value={stem.category}
-                onChange={(e) => updateStem(stem.id, { category: e.target.value as any })}
-                className={`text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded border ${
-                  categoryBadgeMap[stem.category] || 'bg-zinc-800 text-zinc-300'
-                } focus:outline-none cursor-pointer bg-zinc-900`}
-              >
-                <option value="drums">Drums</option>
-                <option value="bass">Bass</option>
-                <option value="lead">Lead</option>
-                <option value="pad">Pad</option>
-                <option value="fx">FX</option>
-              </select>
-            </div>
-          </div>
+          <input
+            type="text"
+            value={stem.name}
+            onChange={(e) => updateStem(stem.id, { name: e.target.value })}
+            className="font-bold text-zinc-100 bg-transparent border-b border-transparent hover:border-zinc-700 focus:border-cyan-500 focus:outline-none px-1 text-sm md:text-base w-32 md:w-40 truncate"
+          />
 
+          <select
+            value={stem.category}
+            onChange={(e) => updateStem(stem.id, { category: e.target.value as any })}
+            className={`text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded border ${
+              categoryBadgeMap[stem.category] || 'bg-zinc-800 text-zinc-300'
+            } focus:outline-none cursor-pointer bg-zinc-900`}
+          >
+            <option value="drums">Drums</option>
+            <option value="bass">Bass</option>
+            <option value="lead">Lead</option>
+            <option value="pad">Pad</option>
+            <option value="fx">FX</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
           {/* Mute & Solo Controls */}
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => toggleMute(stem.id)}
               className={`px-2.5 py-1 text-xs font-mono font-bold rounded-md transition-all ${
@@ -126,86 +125,104 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
               S
             </button>
           </div>
-        </div>
 
-        {/* Pattern Input & Sound Bank Selector */}
-        <div className="flex-1 flex flex-col gap-1 w-full">
-          <div className="flex justify-between items-center">
-            <label className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 flex items-center gap-1.5">
-              <span>Strudel Mini-Notation</span>
-              <span className="text-[9px] text-cyan-400/70 font-normal">e.g. bd*4, [~ sd]*2</span>
-            </label>
-            <button
-              onClick={() => setShowSeqGrid(!showSeqGrid)}
-              className={`px-2 py-0.5 text-[10px] font-mono rounded flex items-center gap-1 transition-colors ${
-                showSeqGrid ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
+          {/* Bookmark & Delete */}
+          <button
+            onClick={() => saveStemToPalette(stem.id)}
+            title="Save Stem to Library Palette"
+            className="p-1.5 text-zinc-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+          >
+            <BookmarkPlus size={16} />
+          </button>
+          <button
+            onClick={() => removeStem(stem.id)}
+            title="Delete Channel"
+            className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Middle Row: Pattern Mini-Notation Input & Sound Bank Selector */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex justify-between items-center">
+          <label className="text-[10px] uppercase font-mono tracking-wider text-zinc-400 flex items-center gap-1.5">
+            <span>Strudel Mini-Notation</span>
+            <span className="text-[9px] text-cyan-400/80 font-normal">e.g. bd*4, [~ sd]*2</span>
+          </label>
+          <button
+            onClick={() => setShowSeqGrid(!showSeqGrid)}
+            className={`px-2 py-0.5 text-[10px] font-mono rounded flex items-center gap-1 transition-colors ${
+              showSeqGrid ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Grid size={11} /> 16-Step Grid
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={stem.pattern}
+            onChange={(e) => updateStem(stem.id, { pattern: e.target.value })}
+            placeholder="e.g., bd*4, [~ sd]*2"
+            className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-lg px-3 py-1.5 font-mono text-xs md:text-sm text-cyan-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 shadow-inner"
+          />
+          {stem.category === 'drums' ? (
+            <select
+              value={stem.bank || 'RolandTR909'}
+              onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
+              className="w-36 md:w-44 bg-zinc-950/90 border border-zinc-800 text-rose-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-rose-500 cursor-pointer"
+              title="Select Drum Kit Soundbank"
             >
-              <Grid size={11} /> 16-Step Grid
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={stem.pattern}
-              onChange={(e) => updateStem(stem.id, { pattern: e.target.value })}
-              placeholder='e.g., bd*4, [~ sd]*2'
-              className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-lg px-3 py-1.5 font-mono text-xs md:text-sm text-cyan-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 shadow-inner"
-            />
-            {stem.category === 'drums' ? (
-              <select
-                value={stem.bank || 'RolandTR909'}
-                onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
-                className="w-32 md:w-40 bg-zinc-950/90 border border-zinc-800 text-rose-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-rose-500 cursor-pointer"
-                title="Select Drum Kit Soundbank"
-              >
-                <option value="RolandTR909">🥁 909 Techno</option>
-                <option value="RolandTR808">🥁 808 Trap</option>
-                <option value="RolandTR707">🥁 707 Synthwave</option>
-                <option value="LinnDrum">🥁 80s Linn</option>
-                <option value="ClubEDM">🥁 Club EDM</option>
-                <option value="Acoustic">🥁 Live Acoustic</option>
-                <option value="casio">🥁 Casio Lo-Fi</option>
-                <option value="Percussion">🥁 Afro Tribal</option>
-              </select>
-            ) : (
-              <select
-                value={stem.bank || 'sawtooth'}
-                onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
-                className="w-32 md:w-40 bg-zinc-950/90 border border-zinc-800 text-cyan-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
-                title="Select Synth Waveform / Instrument"
-              >
-                <option value="sawtooth">🎹 Sawtooth Synth</option>
-                <option value="square">🎹 Square Wave</option>
-                <option value="sine">🎹 Sub Sine</option>
-                <option value="triangle">🎹 Soft Triangle</option>
-                <option value="piano">🎹 Acoustic Piano</option>
-                <option value="organ">🎹 Hammond Organ</option>
-                <option value="vibraphone">🎹 Vibraphone</option>
-                <option value="marimba">🎹 Marimba</option>
-                <option value="flute">🎹 Synth Flute</option>
-                <option value="violin">🎻 Bow Violin</option>
-                <option value="trumpet">🎺 Brass Trumpet</option>
-                <option value="guitar">🎸 Plucked Guitar</option>
-              </select>
-            )}
-          </div>
-          {stem.category === 'drums' && (
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[10px] font-mono text-zinc-400">
-              <span className="text-zinc-500 text-[9px] uppercase font-semibold">Styles:</span>
-              <button onClick={() => updateStem(stem.id, { pattern: 'bd*4, [~ sd]*2, [hh*8]' })} className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 transition-colors">4-on-Floor</button>
-              <button onClick={() => updateStem(stem.id, { pattern: 'bd [~ bd] sd [hh*16]' })} className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-colors">Trap</button>
-              <button onClick={() => updateStem(stem.id, { pattern: 'bd [~ bd] sd [hh*8], [~ cp]*2' })} className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/20 transition-colors">Funk</button>
-              <button onClick={() => updateStem(stem.id, { pattern: '[bd bd] sd [~ bd] sd, [hh*8]' })} className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/20 transition-colors">Breakbeat</button>
-              <button onClick={() => updateStem(stem.id, { pattern: 'bd perc [rim perc] [cb hh*2]' })} className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">Afro</button>
-            </div>
+              <option value="RolandTR909">🥁 909 Techno</option>
+              <option value="RolandTR808">🥁 808 Trap</option>
+              <option value="RolandTR707">🥁 707 Synthwave</option>
+              <option value="LinnDrum">🥁 80s Linn</option>
+              <option value="ClubEDM">🥁 Club EDM</option>
+              <option value="Acoustic">🥁 Live Acoustic</option>
+              <option value="casio">🥁 Casio Lo-Fi</option>
+              <option value="Percussion">🥁 Afro Tribal</option>
+            </select>
+          ) : (
+            <select
+              value={stem.bank || 'sawtooth'}
+              onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
+              className="w-36 md:w-44 bg-zinc-950/90 border border-zinc-800 text-cyan-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
+              title="Select Synth Waveform / Instrument"
+            >
+              <option value="sawtooth">🎹 Sawtooth Synth</option>
+              <option value="square">🎹 Square Wave</option>
+              <option value="sine">🎹 Sub Sine</option>
+              <option value="triangle">🎹 Soft Triangle</option>
+              <option value="piano">🎹 Acoustic Piano</option>
+              <option value="organ">🎹 Hammond Organ</option>
+              <option value="vibraphone">🎹 Vibraphone</option>
+              <option value="marimba">🎹 Marimba</option>
+              <option value="flute">🎹 Synth Flute</option>
+              <option value="violin">🎻 Bow Violin</option>
+              <option value="trumpet">🎺 Brass Trumpet</option>
+              <option value="guitar">🎸 Plucked Guitar</option>
+            </select>
           )}
         </div>
+        {stem.category === 'drums' && (
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[10px] font-mono text-zinc-400">
+            <span className="text-zinc-500 text-[9px] uppercase font-semibold">Styles:</span>
+            <button onClick={() => updateStem(stem.id, { pattern: 'bd*4, [~ sd]*2, [hh*8]' })} className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 transition-colors">4-on-Floor</button>
+            <button onClick={() => updateStem(stem.id, { pattern: 'bd [~ bd] sd [hh*16]' })} className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition-colors">Trap</button>
+            <button onClick={() => updateStem(stem.id, { pattern: 'bd [~ bd] sd [hh*8], [~ cp]*2' })} className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 hover:bg-cyan-500/20 transition-colors">Funk</button>
+            <button onClick={() => updateStem(stem.id, { pattern: '[bd bd] sd [~ bd] sd, [hh*8]' })} className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/20 transition-colors">Breakbeat</button>
+            <button onClick={() => updateStem(stem.id, { pattern: 'bd perc [rim perc] [cb hh*2]' })} className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors">Afro</button>
+          </div>
+        )}
+      </div>
 
-        {/* Mixer Sliders & FX Controls */}
-        <div className="flex items-center gap-2.5 w-full xl:w-auto overflow-x-auto py-1 scrollbar-thin">
-          {/* Volume Slider */}
-          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/50 p-2 rounded-lg border border-zinc-800/60 hover:border-cyan-500/30 transition-colors">
+      {/* Bottom Row: Full Mixer Sliders Channel Strip (VOL, PACE, PAN, FX) */}
+      <div className="pt-2 border-t border-zinc-800/60">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* VOL Slider */}
+          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/60 p-2 rounded-lg border border-zinc-800/80 hover:border-cyan-500/40 transition-colors">
             <div className="flex items-center justify-between w-full text-[10px] font-mono text-zinc-400">
               <span className="flex items-center gap-1 text-cyan-400">
                 {stem.volume === 0 ? <VolumeX size={11} className="text-red-400" /> : <Volume2 size={11} />}
@@ -236,8 +253,8 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
             </span>
           </div>
 
-          {/* Pace / Speed Multiplier Slider */}
-          <div className="flex flex-col items-center gap-1 w-24 shrink-0 bg-zinc-950/60 p-2 rounded-lg border border-purple-900/40 hover:border-purple-500/50 transition-colors shadow-inner">
+          {/* PACE Slider */}
+          <div className="flex flex-col items-center gap-1 w-24 shrink-0 bg-zinc-950/70 p-2 rounded-lg border border-purple-900/50 hover:border-purple-500/60 transition-colors shadow-inner">
             <div className="flex items-center justify-between w-full text-[10px] font-mono">
               <span className="flex items-center gap-1 text-purple-400">
                 <Gauge size={11} />
@@ -268,14 +285,14 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
               >
                 PACE
               </span>
-              <span className="text-[8px] text-purple-300/70 font-mono">
+              <span className="text-[8px] text-purple-300/80 font-mono">
                 {currentPace > 1 ? `.fast` : currentPace < 1 ? `.slow` : `1x`}
               </span>
             </div>
           </div>
 
-          {/* Stereo Pan Slider */}
-          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/50 p-2 rounded-lg border border-zinc-800/60 hover:border-amber-500/30 transition-colors">
+          {/* PAN Slider */}
+          <div className="flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/60 p-2 rounded-lg border border-zinc-800/80 hover:border-amber-500/40 transition-colors">
             <div className="flex items-center justify-between w-full text-[10px] font-mono text-zinc-400">
               <span className="text-amber-400 text-[9px] font-bold">PAN</span>
               <span
@@ -311,7 +328,7 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
 
           {/* Dynamic FX Controls */}
           {stem.effects.map((fx) => (
-            <div key={fx.id} className="relative group/fx flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/40 p-2 rounded-lg border border-zinc-800/50">
+            <div key={fx.id} className="relative group/fx flex flex-col items-center gap-1 w-20 shrink-0 bg-zinc-950/60 p-2 rounded-lg border border-zinc-800/80">
               <div className="flex items-center justify-between w-full text-[10px] font-mono">
                 <span className="uppercase text-[9px] font-semibold text-indigo-400">{fx.type}</span>
                 <span className="text-indigo-300 font-bold">{Math.round(fx.value * 100)}</span>
@@ -339,7 +356,7 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
           <div className="relative shrink-0">
             <button
               onClick={() => setShowAddFx(!showAddFx)}
-              className="flex flex-col items-center justify-center w-10 h-14 rounded-lg border border-dashed border-zinc-700 hover:border-indigo-400 text-zinc-500 hover:text-indigo-300 bg-zinc-950/20 hover:bg-indigo-950/30 transition-all text-xs"
+              className="flex flex-col items-center justify-center w-10 h-14 rounded-lg border border-dashed border-zinc-700 hover:border-indigo-400 text-zinc-400 hover:text-indigo-300 bg-zinc-950/40 hover:bg-indigo-950/30 transition-all text-xs"
               title="Add Audio Effect"
             >
               <Plus size={14} />
@@ -366,24 +383,6 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Action Utility Buttons */}
-        <div className="flex xl:flex-col items-center justify-end gap-1 shrink-0 pt-2 xl:pt-0 border-t xl:border-t-0 border-zinc-800/60">
-          <button
-            onClick={() => saveStemToPalette(stem.id)}
-            title="Save Stem to Library Palette"
-            className="p-2 text-zinc-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
-          >
-            <BookmarkPlus size={16} />
-          </button>
-          <button
-            onClick={() => removeStem(stem.id)}
-            title="Delete Channel"
-            className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-          >
-            <Trash2 size={16} />
-          </button>
         </div>
       </div>
 

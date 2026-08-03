@@ -27,7 +27,7 @@ export function registerDrumPercussionSounds() {
 
     // 1. Acoustic & Tribal Percussion (Conga / Bongo / African Tribal Perc)
     const registerTribalPerc = (name: string, baseFreq: number) => {
-      registerSound(name, (t: number, value: any, onended: () => void) => {
+      registerSound(name, (t: number, _value: any, onended: () => void) => {
         try {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -39,16 +39,15 @@ export function registerDrumPercussionSounds() {
           osc.frequency.setValueAtTime(baseFreq, startTime);
           osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.35, startTime + duration);
 
-          gain.gain.setValueAtTime((value?.gain ?? 0.8) * 0.9, startTime);
+          gain.gain.setValueAtTime(0.9, startTime);
           gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
           osc.connect(gain);
-          gain.connect(ctx.destination);
-
           osc.start(startTime);
           osc.stop(startTime + duration);
 
           setTimeout(onended, duration * 1000);
+          return { node: gain };
         } catch (_) {
           onended();
         }
@@ -64,7 +63,7 @@ export function registerDrumPercussionSounds() {
 
     // 2. Thumping Acoustic & Electronic Kicks (bd, 808bd, 707bd, linn, casio)
     const registerKick = (name: string, startFreq: number, endFreq: number, dur: number) => {
-      registerSound(name, (t: number, value: any, onended: () => void) => {
+      registerSound(name, (t: number, _value: any, onended: () => void) => {
         try {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -75,16 +74,15 @@ export function registerDrumPercussionSounds() {
           osc.frequency.setValueAtTime(startFreq, startTime);
           osc.frequency.exponentialRampToValueAtTime(endFreq, startTime + 0.045);
 
-          gain.gain.setValueAtTime((value?.gain ?? 1.0) * 1.1, startTime);
+          gain.gain.setValueAtTime(1.1, startTime);
           gain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
 
           osc.connect(gain);
-          gain.connect(ctx.destination);
-
           osc.start(startTime);
           osc.stop(startTime + dur);
 
           setTimeout(onended, dur * 1000);
+          return { node: gain };
         } catch (_) {
           onended();
         }
@@ -100,10 +98,11 @@ export function registerDrumPercussionSounds() {
 
     // 3. Snappy Noise Snares (sd, 808sd, 707sd, casio)
     const registerSnare = (name: string, noiseFreq: number) => {
-      registerSound(name, (t: number, value: any, onended: () => void) => {
+      registerSound(name, (t: number, _value: any, onended: () => void) => {
         try {
           const startTime = t || ctx.currentTime;
           const dur = 0.15;
+          const mixGain = ctx.createGain();
 
           // White noise snap component
           if (cachedNoiseBuffer) {
@@ -115,12 +114,12 @@ export function registerDrumPercussionSounds() {
             filter.frequency.setValueAtTime(noiseFreq, startTime);
 
             const noiseGain = ctx.createGain();
-            noiseGain.gain.setValueAtTime((value?.gain ?? 0.8) * 0.7, startTime);
+            noiseGain.gain.setValueAtTime(0.7, startTime);
             noiseGain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
 
             noise.connect(filter);
             filter.connect(noiseGain);
-            noiseGain.connect(ctx.destination);
+            noiseGain.connect(mixGain);
 
             noise.start(startTime);
             noise.stop(startTime + dur);
@@ -133,16 +132,17 @@ export function registerDrumPercussionSounds() {
           osc.frequency.setValueAtTime(180, startTime);
           osc.frequency.exponentialRampToValueAtTime(80, startTime + 0.04);
 
-          oscGain.gain.setValueAtTime((value?.gain ?? 0.8) * 0.5, startTime);
+          oscGain.gain.setValueAtTime(0.5, startTime);
           oscGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.08);
 
           osc.connect(oscGain);
-          oscGain.connect(ctx.destination);
+          oscGain.connect(mixGain);
 
           osc.start(startTime);
           osc.stop(startTime + 0.08);
 
           setTimeout(onended, dur * 1000);
+          return { node: mixGain };
         } catch (_) {
           onended();
         }
@@ -157,9 +157,10 @@ export function registerDrumPercussionSounds() {
 
     // 4. Filtered Metallic Hi-Hats (hh, 808oh, 707hh, casio)
     const registerHat = (name: string, cutoffFreq: number, dur: number) => {
-      registerSound(name, (t: number, value: any, onended: () => void) => {
+      registerSound(name, (t: number, _value: any, onended: () => void) => {
         try {
           const startTime = t || ctx.currentTime;
+          const gain = ctx.createGain();
 
           if (cachedNoiseBuffer) {
             const noise = ctx.createBufferSource();
@@ -169,19 +170,18 @@ export function registerDrumPercussionSounds() {
             filter.type = 'highpass';
             filter.frequency.setValueAtTime(cutoffFreq, startTime);
 
-            const gain = ctx.createGain();
-            gain.gain.setValueAtTime((value?.gain ?? 0.4) * 0.5, startTime);
+            gain.gain.setValueAtTime(0.5, startTime);
             gain.gain.exponentialRampToValueAtTime(0.0001, startTime + dur);
 
             noise.connect(filter);
             filter.connect(gain);
-            gain.connect(ctx.destination);
 
             noise.start(startTime);
             noise.stop(startTime + dur);
           }
 
           setTimeout(onended, dur * 1000);
+          return { node: gain };
         } catch (_) {
           onended();
         }
@@ -212,16 +212,15 @@ export function registerDrumPercussionSounds() {
           osc.frequency.setValueAtTime(freq, startTime);
 
           gain.gain.setValueAtTime(0.0001, startTime);
-          gain.gain.linearRampToValueAtTime((value?.gain ?? 0.6) * 0.7, startTime + attack);
+          gain.gain.linearRampToValueAtTime(0.7, startTime + attack);
           gain.gain.exponentialRampToValueAtTime(0.0001, startTime + attack + decay);
 
           osc.connect(gain);
-          gain.connect(ctx.destination);
-
           osc.start(startTime);
           osc.stop(startTime + attack + decay);
 
           setTimeout(onended, (attack + decay) * 1000);
+          return { node: gain };
         } catch (_) {
           onended();
         }
@@ -381,8 +380,8 @@ class StrudelEngine {
         code += `.pan(${stem.pan.toFixed(2)})`;
       }
 
-      // Calculate effective channel volume based on mute, solo, and volume slider
-      let effVol = stem.volume;
+      // Calculate effective channel volume based on mute, solo, volume slider, and masterVolume
+      let effVol = stem.volume * masterVolume;
       if (stem.muted) effVol = 0;
       if (hasSolo && !stem.solo) effVol = 0;
 
@@ -394,8 +393,7 @@ class StrudelEngine {
     if (stemCodes.length === 0) return 'stack().gain(0)';
 
     const combiner = arrangementMode === 'cat' ? 'cat' : 'stack';
-    const safeMaster = Math.max(0.0001, masterVolume).toFixed(4);
-    return `${combiner}(\n${stemCodes.join(',\n')}\n).cpm(${bpm}).gain(${safeMaster})`;
+    return `${combiner}(\n${stemCodes.join(',\n')}\n).cpm(${bpm})`;
   }
 
   public async syncState(
