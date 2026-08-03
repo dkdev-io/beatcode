@@ -168,7 +168,7 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
             placeholder="e.g., bd*4, [~ sd]*2"
             className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-lg px-3 py-1.5 font-mono text-xs md:text-sm text-cyan-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 shadow-inner"
           />
-          {stem.category === 'drums' ? (
+          {stem.category === 'drums' && (
             <select
               value={stem.bank || 'RolandTR909'}
               onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
@@ -184,25 +184,65 @@ export const StemRow: React.FC<StemRowProps> = ({ stem }) => {
               <option value="casio">🥁 Casio Lo-Fi</option>
               <option value="Percussion">🥁 Afro Tribal</option>
             </select>
-          ) : (
+          )}
+
+          {stem.category === 'bass' && (
             <select
               value={stem.bank || 'sawtooth'}
               onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
-              className="w-36 md:w-44 bg-zinc-950/90 border border-zinc-800 text-cyan-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
-              title="Select Synth Waveform / Instrument"
+              className="w-36 md:w-44 bg-zinc-950/90 border border-zinc-800 text-amber-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-amber-500 cursor-pointer"
+              title="Select Bass Synth Sound"
             >
-              <option value="sawtooth">🎹 Sawtooth Synth</option>
-              <option value="square">🎹 Square Wave</option>
-              <option value="sine">🎹 Sub Sine</option>
-              <option value="triangle">🎹 Soft Triangle</option>
+              <option value="sine">🔊 Sub Sine Bass</option>
+              <option value="sawtooth">🔊 Sawtooth Acid Bass</option>
+              <option value="square">🔊 Square Punch Bass</option>
+              <option value="triangle">🔊 Soft Triangle Bass</option>
+              <option value="guitar">🎸 Plucked Bass</option>
+            </select>
+          )}
+
+          {stem.category === 'lead' && (
+            <select
+              value={stem.bank || 'square'}
+              onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
+              className="w-36 md:w-44 bg-zinc-950/90 border border-zinc-800 text-cyan-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
+              title="Select Lead Instrument Sound"
+            >
+              <option value="sawtooth">🎹 Sawtooth Lead</option>
+              <option value="square">🎹 Square Wave Lead</option>
               <option value="piano">🎹 Acoustic Piano</option>
-              <option value="organ">🎹 Hammond Organ</option>
               <option value="vibraphone">🎹 Vibraphone</option>
               <option value="marimba">🎹 Marimba</option>
               <option value="flute">🎹 Synth Flute</option>
               <option value="violin">🎻 Bow Violin</option>
               <option value="trumpet">🎺 Brass Trumpet</option>
-              <option value="guitar">🎸 Plucked Guitar</option>
+            </select>
+          )}
+
+          {stem.category === 'pad' && (
+            <select
+              value={stem.bank || 'sawtooth'}
+              onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
+              className="w-36 md:w-44 bg-zinc-950/90 border border-zinc-800 text-purple-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-purple-500 cursor-pointer"
+              title="Select Pad Sound"
+            >
+              <option value="sawtooth">🌌 Warm Sawtooth Pad</option>
+              <option value="square">🌌 Square Ambient Pad</option>
+              <option value="triangle">🌌 Soft Triangle Chords</option>
+              <option value="organ">🎹 Hammond Organ</option>
+            </select>
+          )}
+
+          {stem.category === 'fx' && (
+            <select
+              value={stem.bank || 'square'}
+              onChange={(e) => updateStem(stem.id, { bank: e.target.value })}
+              className="w-36 md:w-44 bg-zinc-950/90 border border-zinc-800 text-emerald-300 rounded-lg px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-emerald-500 cursor-pointer"
+              title="Select FX Sound"
+            >
+              <option value="square">⚡ Resonant Synth FX</option>
+              <option value="sine">⚡ Sub Drone</option>
+              <option value="sawtooth">⚡ Saw Noise Sweeps</option>
             </select>
           )}
         </div>

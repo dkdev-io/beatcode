@@ -69,20 +69,6 @@ class StrudelEngine {
     arrangementMode: ArrangementMode = 'stack'
   ): string {
     const hasSolo = stems.some((s) => s.solo);
-    const validSynths = [
-      'sawtooth',
-      'square',
-      'sine',
-      'triangle',
-      'piano',
-      'organ',
-      'vibraphone',
-      'marimba',
-      'flute',
-      'violin',
-      'trumpet',
-      'guitar'
-    ];
 
     const stemCodes = stems.map((stem) => {
       let code = '';
@@ -107,16 +93,36 @@ class StrudelEngine {
         code = `s("${patternStr}")`;
       } else {
         let soundName = (stem.bank || 'sawtooth').toLowerCase();
-        if (!validSynths.includes(soundName)) {
-          soundName = stem.category === 'bass' ? 'sawtooth' : 'square';
-        }
+        let pat = stem.pattern.trim();
 
-        let pat = stem.pattern;
         if (stem.category === 'bass') {
           pat = pat.replace(/c1/g, 'c2').replace(/eb1/g, 'eb2').replace(/f1/g, 'f2').replace(/g1/g, 'g2').replace(/a1/g, 'a2');
         }
 
-        code = `note("${pat}").s("${soundName}")`;
+        // Map instrument choices cleanly to native WebAudio synth oscillators + tailored DSP
+        if (soundName === 'piano') {
+          code = `note("${pat}").s("triangle").decay(0.35).lpf(3200)`;
+        } else if (soundName === 'organ') {
+          code = `note("${pat}").s("sine").lpf(4200)`;
+        } else if (soundName === 'vibraphone') {
+          code = `note("${pat}").s("sine").decay(0.75)`;
+        } else if (soundName === 'marimba') {
+          code = `note("${pat}").s("triangle").decay(0.22)`;
+        } else if (soundName === 'flute') {
+          code = `note("${pat}").s("sine").lpf(1400)`;
+        } else if (soundName === 'violin') {
+          code = `note("${pat}").s("sawtooth").lpf(2400)`;
+        } else if (soundName === 'trumpet') {
+          code = `note("${pat}").s("square").lpf(3400)`;
+        } else if (soundName === 'guitar') {
+          code = `note("${pat}").s("triangle").decay(0.20).lpf(1200)`;
+        } else {
+          // Core WebAudio Oscillators: sawtooth, square, sine, triangle
+          if (!['sawtooth', 'square', 'sine', 'triangle'].includes(soundName)) {
+            soundName = stem.category === 'bass' ? 'sawtooth' : 'square';
+          }
+          code = `note("${pat}").s("${soundName}")`;
+        }
       }
 
       // Apply Pace / Speed multiplier on individual stem (.fast or .slow)
